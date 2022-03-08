@@ -1,33 +1,44 @@
 package com.example.quotesapp
 
 import android.os.Bundle
-import android.view.Surface
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.MaterialTheme
+import androidx.activity.viewModels
+import androidx.compose.material.Scaffold
 import androidx.compose.material.Surface
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import com.example.quotesapp.home.HomeViewModel
 import com.example.quotesapp.ui.components.QuoteCard
 import com.example.quotesapp.ui.theme.QuotesAppTheme
 
 class MainActivity : ComponentActivity() {
+
+    private val homeViewModel by viewModels<HomeViewModel>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-          QuotesApp()
+          QuotesApp(homeViewModel)
         }
     }
 }
 
 @Composable
-fun QuotesApp() {
+fun QuotesApp(viewModel: HomeViewModel) {
     QuotesAppTheme{
         Surface() {
-            QuoteCard()
+            Scaffold(modifier = Modifier
+            ) {
+                QuoteCard(
+                    loadingStatus = viewModel.status,
+                    currentQuote = viewModel.currentQuote,
+                    totalAvailable = viewModel.quotes.size,
+                    currentIndex = viewModel.quotes.indexOf(viewModel.currentQuote),
+                    onBackClick = viewModel::prevQuote,
+                    onForwardClick = viewModel::nextQuote
+                )
+            }
         }
     }
 }
