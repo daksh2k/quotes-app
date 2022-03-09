@@ -41,8 +41,9 @@ class HomeViewModel : ViewModel() {
         getQuotes()
     }
 
-    /*
-    * Get the quotes from the Api and set them in the viewmodel*/
+    /**
+     * Get the quotes from the Api and set them in the ViewModel
+     **/
     private fun getQuotes() {
         viewModelScope.launch {
             status = QuoteApiStatus.LOADING
@@ -63,7 +64,8 @@ class HomeViewModel : ViewModel() {
             viewModelScope.launch {
                 status = QuoteApiStatus.PRELOAD
                 try {
-                    val apiResp = QuoteApi.retrofitService.getQuotes()
+                    val apiResp =
+                        QuoteApi.retrofitService.getQuotes(tag = activeTags.joinToString(separator = " "))
                     quotes.addAll(apiResp.quotes)
                     quotes.distinct()
                     Log.d(TAG, "Preloaded!!!!!" + apiResp.quotesPresent)
@@ -73,9 +75,11 @@ class HomeViewModel : ViewModel() {
                 }
             }
         }
-        if (currentQuoteViewIndex < quotes.size) {
+        themeColor = getRandomColor()
+        if (currentQuoteViewIndex < quotes.size - 1) {
             currentQuoteViewIndex += 1
-            themeColor = getRandomColor()
+        } else {
+            currentQuoteViewIndex = 0
         }
     }
 
@@ -99,17 +103,26 @@ class HomeViewModel : ViewModel() {
             status = QuoteApiStatus.LOADING
             try {
                 val apiResp =
-                    QuoteApi.retrofitService.getTaggedQuotes(tag = activeTags.joinToString(separator = " "))
-                quotes.clear()
-                quotes.addAll(apiResp.quotes)
-                currentQuoteViewIndex = 0
-                status = QuoteApiStatus.DONE
+                    QuoteApi.retrofitService.getQuotes(tag = activeTags.joinToString(separator = " "))
+                if (apiResp.quotesPresent == 0) {
+                    status = QuoteApiStatus.ERROR
+                } else {
+                    quotes.clear()
+                    quotes.addAll(apiResp.quotes)
+                    currentQuoteViewIndex = 0
+                    status = QuoteApiStatus.DONE
+                }
             } catch (e: Exception) {
                 status = QuoteApiStatus.ERROR
             }
         }
     }
 
+    /**
+     * Returns a new color every time.
+     * Checks recursively with the previously returned color.
+     * @return A random Color instance
+     * */
     private fun getRandomColor(initial: Boolean = false): Color {
         val randomColor = pastelColors.values.random()
         if (!initial) {

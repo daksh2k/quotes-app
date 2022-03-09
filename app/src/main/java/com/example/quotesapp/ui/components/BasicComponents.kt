@@ -9,10 +9,14 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.FormatQuote
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -34,7 +38,9 @@ import com.example.quotesapp.home.QuoteApiStatus
 import com.example.quotesapp.network.Quote
 import com.example.quotesapp.ui.theme.Purple200
 import com.example.quotesapp.ui.theme.QuotesAppTheme
-import androidx.compose.foundation.lazy.items
+import com.example.quotesapp.utils.brightenColor
+import com.example.quotesapp.utils.darkenColor
+import com.example.quotesapp.utils.getValidTags
 
 
 @Composable
@@ -48,110 +54,114 @@ fun QuoteCard(
     onBackClick: () -> Unit,
     onForwardClick: () -> Unit,
     onTagClick: (text: String) -> Unit
-){
-//    Card {
-        val color: Color by animateColorAsState(targetValue = themeColor,
+) {
+    val color: Color by animateColorAsState(
+        targetValue = themeColor,
         animationSpec = tween(
-            durationMillis = 1000,
+            durationMillis = 1200,
             easing = LinearOutSlowInEasing
         )
-
-        )
+    )
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .fillMaxSize()
+            .background(color = color)
+    ) {
         Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .fillMaxSize()
-                .background(color = color)
-        ){
-            Box(
-                Modifier
-                    .clip(shape = RoundedCornerShape(15.dp))
-                    .border(
-                        width = 5.dp,
-                        color = MaterialTheme.colors.onPrimary,
-                        shape = RoundedCornerShape(15.dp)
-                    )
-                    .requiredWidthIn(max = LocalConfiguration.current.screenWidthDp.dp.minus(20.dp))
-                    .animateContentSize()
-            ){
-                Column(
-                    modifier = Modifier
-                        .padding(3.dp)
-                        .background(color = MaterialTheme.colors.onPrimary)
-                        .fillMaxWidth()
+            Modifier
+                .clip(shape = RoundedCornerShape(15.dp))
+                .border(
+                    width = 5.dp,
+                    color = MaterialTheme.colors.onPrimary,
+                    shape = RoundedCornerShape(15.dp)
+                )
+                .requiredWidthIn(max = LocalConfiguration.current.screenWidthDp.dp.minus(20.dp))
+                .animateContentSize()
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(3.dp)
+                    .background(color = MaterialTheme.colors.onPrimary)
+                    .fillMaxWidth()
 
-                ) {
-                    if(loadingStatus!=QuoteApiStatus.LOADING && loadingStatus!=QuoteApiStatus.ERROR){
-                        val context =  LocalContext.current
-                        val formattedQuote = stringResource(
-                            R.string.quote,
-                            currentQuote!!.quote,
-                            currentQuote.author,
-                            "#"+ currentQuote.tags.replace(", "," #")
-                        )
-                        if(activeTags.isNotEmpty()){
-                            Text(
-                                text = activeTags.joinToString(prefix = "#", postfix = " quotes", separator = ", #"),
-                                modifier = Modifier
-                                    .padding(8.dp)
-                                    .align(alignment = Alignment.CenterHorizontally),
-                                style = MaterialTheme.typography.h5,
-                                color = color,
-                                textAlign = TextAlign.Center,
-                                maxLines = 2
-                            )
-                        }
-                        QuoteText(
-                            text = currentQuote.quote,
-                            themeColor = color
-                        )
+            ) {
+                if (loadingStatus != QuoteApiStatus.LOADING && loadingStatus != QuoteApiStatus.ERROR) {
+                    val context = LocalContext.current
+                    val formattedQuote = stringResource(
+                        R.string.quote,
+                        currentQuote!!.quote,
+                        currentQuote.author,
+                        "#" + currentQuote.tags.replace(", ", " #")
+                    )
+                    if (activeTags.isNotEmpty()) {
                         Text(
-                            text = "- " + currentQuote.author,
-                            color = color,
+                            text = activeTags.joinToString(
+                                prefix = "#",
+                                postfix = " quotes",
+                                separator = ", #"
+                            ),
                             modifier = Modifier
-                                .align(alignment = Alignment.End)
-                                .padding(12.dp),
-                            style = MaterialTheme.typography.body1.copy(
-                                fontWeight = FontWeight.W300,
-                                fontSize = 22.sp
-                            )
-                        )
-                        TagBarRow(
-                            themeColor = color,
-                            tags = getValidTags(currentQuote.tags.split(", "), activeTags),
-                            activeTags = activeTags,
-                            onTagClick = onTagClick
-                        )
-                        BottomToolBar(
-                            totalAvailable = totalAvailable,
-                            currentIndex = currentIndex,
-                            onShare = {  context.startActivity(createShareIntent(formattedQuote)) },
-                            onBack = onBackClick,
-                            onForward = onForwardClick,
-                            themeColor = color,
-                            modifier = Modifier.fillMaxWidth()
+                                .padding(8.dp)
+                                .align(alignment = Alignment.CenterHorizontally),
+                            style = MaterialTheme.typography.h5,
+                            color = color,
+                            textAlign = TextAlign.Center,
+                            maxLines = 2
                         )
                     }
-                    else{
-                        QuoteText(text = "Fetching Quotes!",themeColor = color)
-                        if(loadingStatus==QuoteApiStatus.ERROR){
-                            Text(text = "Error in fetching\nCheck your network connection!", color = MaterialTheme.colors.error)
-                        }
+                    QuoteText(
+                        text = currentQuote.quote,
+                        themeColor = color
+                    )
+                    Text(
+                        text = "- " + currentQuote.author,
+                        color = color,
+                        modifier = Modifier
+                            .align(alignment = Alignment.End)
+                            .padding(12.dp),
+                        style = MaterialTheme.typography.body1.copy(
+                            fontWeight = FontWeight.W300,
+                            fontSize = 22.sp
+                        )
+                    )
+                    TagBarRow(
+                        themeColor = color,
+                        tags = getValidTags(currentQuote.tags.split(", "), activeTags),
+                        activeTags = activeTags,
+                        onTagClick = onTagClick
+                    )
+                    BottomToolBar(
+                        totalAvailable = totalAvailable,
+                        currentIndex = currentIndex,
+                        onShare = { context.startActivity(createShareIntent(formattedQuote)) },
+                        onBack = onBackClick,
+                        onForward = onForwardClick,
+                        themeColor = color,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    QuoteText(text = "Fetching Quotes!", themeColor = color)
+                    if (loadingStatus == QuoteApiStatus.ERROR) {
+                        Text(
+                            text = "Error in fetching\nCheck your network connection!",
+                            color = MaterialTheme.colors.error
+                        )
                     }
                 }
             }
         }
-//    }
+    }
 }
 
 @Composable
 fun QuoteText(
     text: String,
     themeColor: Color = MaterialTheme.colors.primary
-){
+) {
     Row(
         modifier = Modifier.padding(12.dp)
-    ){
+    ) {
         val scroll = rememberScrollState(0)
         Icon(
             imageVector = Icons.Default.FormatQuote,
@@ -179,23 +189,28 @@ fun TagBarRow(
     tags: List<String>,
     activeTags: List<String>,
     onTagClick: (text: String) -> Unit
-){
-    LazyRow(modifier = modifier.padding(horizontal = 8.dp)){
-        items(activeTags){ tag ->
+) {
+    LazyRow(modifier = modifier.padding(horizontal = 8.dp)) {
+        items(activeTags) { tag ->
             TagButton(
                 modifier = Modifier
                     .padding(4.dp)
                     .clip(RoundedCornerShape(45)),
                 butColors = ButtonDefaults.buttonColors(
-                    backgroundColor = if(isSystemInDarkTheme()) darkenColor(themeColor,0.5f) else brightenColor(themeColor,0.5f) ,
-                    contentColor = if(!isSystemInDarkTheme()) darkenColor(themeColor,) else brightenColor(themeColor) ,
+                    backgroundColor = if (isSystemInDarkTheme()) darkenColor(
+                        themeColor,
+                        0.5f
+                    ) else brightenColor(themeColor, 0.5f),
+                    contentColor = if (!isSystemInDarkTheme()) darkenColor(themeColor) else brightenColor(
+                        themeColor
+                    ),
                 ),
                 text = tag,
                 onTagClick = onTagClick
             )
         }
 
-        items(tags){ tag ->
+        items(tags) { tag ->
             TagButton(
                 modifier = Modifier
                     .padding(4.dp)
@@ -203,8 +218,9 @@ fun TagBarRow(
                 text = tag,
                 butColors = ButtonDefaults.buttonColors(
                     backgroundColor = themeColor.copy(0.1f),
-                    contentColor = themeColor),
-                enabled = activeTags.size<3,
+                    contentColor = themeColor
+                ),
+                enabled = activeTags.size < 3,
                 onTagClick = onTagClick
             )
         }
@@ -218,14 +234,14 @@ fun TagButton(
     butColors: ButtonColors,
     enabled: Boolean = true,
     onTagClick: (text: String) -> Unit
-){
+) {
     Button(
-        onClick = {onTagClick(text)},
+        onClick = { onTagClick(text) },
         elevation = null,
         enabled = enabled,
         colors = butColors,
         modifier = modifier
-        ) {
+    ) {
         Text(
             text = text
         )
@@ -241,7 +257,7 @@ fun BottomToolBar(
     onForward: () -> Unit,
     themeColor: Color,
     modifier: Modifier = Modifier
-){
+) {
     val buttonMods = Modifier
         .padding(8.dp)
         .clip(RoundedCornerShape(30))
@@ -258,22 +274,22 @@ fun BottomToolBar(
             themeColor = themeColor,
             onBackClick = onBack,
             onForwardClick = onForward,
-            showBack = currentIndex!=0,
-            showForward = currentIndex-1!=totalAvailable,
+            showBack = currentIndex != 0,
+            showForward = currentIndex - 1 != totalAvailable,
         )
     }
 }
 
 @Composable
 fun ShareQuoteButtonRow(
-    onShareClick:() -> Unit,
+    onShareClick: () -> Unit,
     buttonMods: Modifier = Modifier,
     themeColor: Color
-){
+) {
     Row(horizontalArrangement = Arrangement.Start) {
         IconButton(
             modifier = buttonMods.background(themeColor),
-            onClick = {onShareClick()}
+            onClick = { onShareClick() }
         ) {
             Icon(
                 imageVector = Icons.Default.Share,
@@ -282,20 +298,21 @@ fun ShareQuoteButtonRow(
         }
     }
 }
+
 /**
  * A navigation toolbar with back and forward buttons
  */
 @Composable
 fun NavigateQuoteButtonRow(
-    modifier:  Modifier = Modifier,
-    buttonMods:  Modifier = Modifier,
+    modifier: Modifier = Modifier,
+    buttonMods: Modifier = Modifier,
     themeColor: Color,
     onBackClick: () -> Unit,
     onForwardClick: () -> Unit,
     showBack: Boolean = true,
     showForward: Boolean = true
-){
-    Row(horizontalArrangement = Arrangement.End,modifier = modifier){
+) {
+    Row(horizontalArrangement = Arrangement.End, modifier = modifier) {
         val iconMods = Modifier.requiredSize(35.dp)
         IconButton(
             onClick = onBackClick,
@@ -326,7 +343,7 @@ fun NavigateQuoteButtonRow(
     }
 }
 
-fun createShareIntent(text: String): Intent{
+fun createShareIntent(text: String): Intent {
     val sendIntent: Intent = Intent().apply {
         action = Intent.ACTION_SEND
         putExtra(Intent.EXTRA_TEXT, text)
@@ -335,56 +352,45 @@ fun createShareIntent(text: String): Intent{
     return Intent.createChooser(sendIntent, null)
 }
 
-fun getValidTags(tags: List<String>, activeTags: List<String>): List<String>{
-    return tags
-        .distinct()
-        .filter { !activeTags.contains(it) && it.length<12 }
-        .take(5 - activeTags.size)
-}
-
-fun brightenColor(color:Color, alpha: Float = 1F): Color {
-    return color.copy(
-        alpha = alpha,
-        red =  (color.red * 1.3).toFloat().coerceAtMost(1f),
-        green = (color.green * 1.3).toFloat().coerceAtMost(1f),
-        blue = (color.blue * 1.3).toFloat().coerceAtMost(1f)
-    )
-}
-
-fun darkenColor(color:Color, alpha: Float = 1f): Color {
-    return color.copy(
-        alpha = alpha,
-        red =  (color.red * .7).toFloat().coerceAtLeast(0f),
-        green = (color.green * .7).toFloat().coerceAtLeast(0f),
-        blue = (color.blue * .7).toFloat().coerceAtLeast(0f)
-    )
-}
-
-@Preview
+@Preview(showBackground = true)
 @Composable
-fun PreviewTagBarRow(){
-    TagBarRow(themeColor = Purple200, tags = listOf("life","laugh"), activeTags = listOf("some","thing"), onTagClick = {})
+fun PreviewTagBarRow() {
+    TagBarRow(
+        themeColor = Purple200,
+        tags = listOf("life", "laugh"),
+        activeTags = listOf("some", "thing"),
+        onTagClick = {})
 }
 
-@Preview(showBackground = true, name = "Dark Mode",uiMode = UI_MODE_NIGHT_YES)
+@Preview(showBackground = true, name = "Dark Mode", uiMode = UI_MODE_NIGHT_YES)
 @Preview(showBackground = true, name = "Light Mode")
 @Composable
-fun QuoteCardPreview(){
+fun QuoteCardPreview() {
     QuotesAppTheme {
         QuoteCard(
             loadingStatus = QuoteApiStatus.DONE,
-            currentQuote = Quote(author = "Albert Einstein", quote = "The only reason for time is so that everything doesn't happen at once","",""),
-            Purple200,5,1, listOf(),{},{},{})
+            currentQuote = Quote(
+                author = "Albert Einstein",
+                quote = "The only reason for time is so that everything doesn't happen at once",
+                "",
+                ""
+            ),
+            Purple200, 5, 1, listOf(), {}, {}, {})
     }
 }
 
-@Preview(showBackground = true, name = "Error",uiMode = UI_MODE_NIGHT_YES)
+@Preview(showBackground = true, name = "Error", uiMode = UI_MODE_NIGHT_YES)
 @Composable
-fun QuoteCardPreviewError(){
+fun QuoteCardPreviewError() {
     QuotesAppTheme {
         QuoteCard(
             loadingStatus = QuoteApiStatus.ERROR,
-            currentQuote = Quote(author = "Albert Einstein", quote = "The only reason for time is so that everything doesn't happen at once","",""),
-            Purple200,5,1, listOf(),{},{},{})
+            currentQuote = Quote(
+                author = "Albert Einstein",
+                quote = "The only reason for time is so that everything doesn't happen at once",
+                "",
+                ""
+            ),
+            Purple200, 5, 1, listOf(), {}, {}, {})
     }
 }

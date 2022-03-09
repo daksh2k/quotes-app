@@ -1,6 +1,5 @@
 package com.example.quotesapp.network
 
-import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
@@ -15,13 +14,10 @@ private val retrofit = Retrofit.Builder()
 
 
 interface QuoteApiService{
-    @GET("/quotes?format=json")
-    suspend fun getQuotes(@Query("length") length: String = "10,120",
-    ): QuoteApiModel
 
     @GET("/quotes?format=json")
-    suspend fun getTaggedQuotes(
-        @Query("tags") tag: String,
+    suspend fun getQuotes(
+        @Query("tags") tag: String = "",
         @Query("length") length: String = "10,120"
     ): QuoteApiModel
 }

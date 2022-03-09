@@ -1,7 +1,5 @@
 package com.example.quotesapp.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material.MaterialTheme
 import androidx.compose.ui.graphics.Color
 
 val Purple200 = Color(0xFFBB86FC)
@@ -19,8 +17,8 @@ val pastelColors = mapOf(
     "Purple 500" to Purple200
 )
 
-object AnimatingColor{
-    val lightColors = pastelColors.values
-
-    val darkColors = pastelColors.values
-}
+//object AnimatingColor{
+//    val lightColors = pastelColors.values
+//
+//    val darkColors = pastelColors.values
+//}
