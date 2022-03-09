@@ -16,11 +16,13 @@ private val retrofit = Retrofit.Builder()
 
 interface QuoteApiService{
     @GET("/quotes?format=json")
-    suspend fun getQuotes(@Query("length") length: String = "20,150",
+    suspend fun getQuotes(@Query("length") length: String = "10,120",
     ): QuoteApiModel
 
     @GET("/quotes?format=json")
-    suspend fun getTaggedQuotes(@Query("tags") tags: String
+    suspend fun getTaggedQuotes(
+        @Query("tags") tag: String,
+        @Query("length") length: String = "10,120"
     ): QuoteApiModel
 }
 

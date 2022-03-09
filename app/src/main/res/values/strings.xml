@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Quotes App</string>
+    <string name="quote">%1$s\n-%2$s\n%3$s</string>
 </resources>

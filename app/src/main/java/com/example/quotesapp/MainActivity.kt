@@ -33,10 +33,13 @@ fun QuotesApp(viewModel: HomeViewModel) {
                 QuoteCard(
                     loadingStatus = viewModel.status,
                     currentQuote = viewModel.currentQuote,
+                    themeColor = viewModel.themeColor,
                     totalAvailable = viewModel.quotes.size,
                     currentIndex = viewModel.quotes.indexOf(viewModel.currentQuote),
+                    activeTags = viewModel.activeTags,
                     onBackClick = viewModel::prevQuote,
-                    onForwardClick = viewModel::nextQuote
+                    onForwardClick = viewModel::nextQuote,
+                    onTagClick = viewModel::getTaggedQuotes
                 )
             }
         }
