@@ -1,5 +1,6 @@
-package com.example.quotesapp.network
+package com.example.quotesapp.data.remote
 
+import com.example.quotesapp.data.model.QuoteApiModel
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET

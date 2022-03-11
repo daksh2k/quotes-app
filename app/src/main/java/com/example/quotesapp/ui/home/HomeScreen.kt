@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.sp
 import com.example.quotesapp.HomeViewModel
 import com.example.quotesapp.QuoteApiStatus
 import com.example.quotesapp.R
-import com.example.quotesapp.network.QuoteModel
+import com.example.quotesapp.data.model.Quote
 import com.example.quotesapp.ui.components.BottomToolBar
 import com.example.quotesapp.ui.components.QuoteText
 import com.example.quotesapp.ui.components.TagBarRow
@@ -82,7 +82,7 @@ fun QuotesApp(viewModel: HomeViewModel) {
 @Composable
 fun QuoteCard(
     loadingStatus: QuoteApiStatus,
-    currentQuoteModel: QuoteModel?,
+    currentQuoteModel: Quote?,
     themeColor: Color,
     activeTags: List<String>,
     onTagClick: (text: String) -> Unit,
@@ -174,7 +174,7 @@ fun QuoteCardPreview() {
     QuotesAppTheme {
         QuoteCard(
             loadingStatus = QuoteApiStatus.DONE,
-            currentQuoteModel = QuoteModel(
+            currentQuoteModel = Quote(
                 quoteId = "",
                 author = "Albert Einstein",
                 quote = "The only reason for time is so that everything doesn't happen at once",
@@ -191,7 +191,7 @@ fun QuoteCardErrorPreview() {
     QuotesAppTheme {
         QuoteCard(
             loadingStatus = QuoteApiStatus.ERROR,
-            currentQuoteModel = QuoteModel(
+            currentQuoteModel = Quote(
                 quoteId = "",
                 author = "Albert Einstein",
                 quote = "The only reason for time is so that everything doesn't happen at once",
