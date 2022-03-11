@@ -4,14 +4,15 @@ data class QuoteApiModel(
     val ignoredAuthors: String?,
     val ignoredTags: String?,
     val isRandom: Boolean,
-    val quotes: List<Quote>,
+    val quotes: List<QuoteModel>,
     val quotesPresent: Int,
     val quotesReturned: Int,
     val requestedAuthors: String?,
     val requestedTags: String?
 )
 
-data class Quote(
+data class QuoteModel(
+    val quoteId: String,
     val author: String,
     val quote: String,
     val source: String,
