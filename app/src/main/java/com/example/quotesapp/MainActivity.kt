@@ -4,8 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import com.example.quotesapp.home.HomeViewModel
-import com.example.quotesapp.home.QuotesApp
+import com.example.quotesapp.ui.home.QuotesApp
 
 class MainActivity : ComponentActivity() {
 

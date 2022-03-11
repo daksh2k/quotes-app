@@ -1,4 +1,4 @@
-package com.example.quotesapp.home
+package com.example.quotesapp
 
 import android.util.Log
 import androidx.compose.runtime.getValue
@@ -8,8 +8,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.quotesapp.network.Quote
 import com.example.quotesapp.network.QuoteApi
+import com.example.quotesapp.network.QuoteModel
 import com.example.quotesapp.ui.theme.pastelColors
 import kotlinx.coroutines.launch
 
@@ -31,10 +31,10 @@ class HomeViewModel : ViewModel() {
     var activeTags = mutableStateListOf<String>()
         private set
 
-    var quotes = mutableStateListOf<Quote>()
+    var quotes = mutableStateListOf<QuoteModel>()
         private set
 
-    val currentQuote: Quote?
+    val currentQuoteModel: QuoteModel?
         get() = quotes.getOrNull(currentQuoteViewIndex)
 
     init {
@@ -53,6 +53,7 @@ class HomeViewModel : ViewModel() {
                 currentQuoteViewIndex = 0
                 status = QuoteApiStatus.DONE
             } catch (e: Exception) {
+                Log.e(TAG, e.stackTraceToString())
                 status = QuoteApiStatus.ERROR
             }
         }
@@ -71,7 +72,7 @@ class HomeViewModel : ViewModel() {
                     Log.d(TAG, "Preloaded!!!!!" + apiResp.quotesPresent)
                     status = QuoteApiStatus.DONE
                 } catch (e: Exception) {
-                    Log.d(TAG, e.toString())
+                    Log.e(TAG, e.stackTraceToString())
                 }
             }
         }
@@ -121,7 +122,6 @@ class HomeViewModel : ViewModel() {
     /**
      * Returns a new color every time.
      * Checks recursively with the previously returned color.
-     * @return A random Color instance
      * */
     private fun getRandomColor(initial: Boolean = false): Color {
         val randomColor = pastelColors.values.random()

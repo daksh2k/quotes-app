@@ -1,4 +1,4 @@
-package com.example.quotesapp.home
+package com.example.quotesapp.ui.home
 
 import android.content.res.Configuration
 import androidx.compose.animation.animateColorAsState
@@ -26,8 +26,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.quotesapp.HomeViewModel
+import com.example.quotesapp.QuoteApiStatus
 import com.example.quotesapp.R
-import com.example.quotesapp.network.Quote
+import com.example.quotesapp.network.QuoteModel
 import com.example.quotesapp.ui.components.BottomToolBar
 import com.example.quotesapp.ui.components.QuoteText
 import com.example.quotesapp.ui.components.TagBarRow
@@ -42,17 +44,37 @@ fun QuotesApp(viewModel: HomeViewModel) {
         Scaffold(
             modifier = Modifier
         ) {
+            val color: Color by animateColorAsState(
+                targetValue = viewModel.themeColor,
+                animationSpec = tween(
+                    durationMillis = 1200,
+                    easing = LinearOutSlowInEasing
+                )
+            )
             QuoteCard(
                 loadingStatus = viewModel.status,
-                currentQuote = viewModel.currentQuote,
-                themeColor = viewModel.themeColor,
-                totalAvailable = viewModel.quotes.size,
-                currentIndex = viewModel.quotes.indexOf(viewModel.currentQuote),
+                currentQuoteModel = viewModel.currentQuoteModel,
+                themeColor = color,
                 activeTags = viewModel.activeTags,
-                onBackClick = viewModel::prevQuote,
-                onForwardClick = viewModel::nextQuote,
                 onTagClick = viewModel::getTaggedQuotes
-            )
+            ) {
+                val context = LocalContext.current
+                val formattedQuote = stringResource(
+                    R.string.quote,
+                    viewModel.currentQuoteModel!!.quote,
+                    viewModel.currentQuoteModel!!.author,
+                    "#" + viewModel.currentQuoteModel!!.tags.replace(", ", " #")
+                )
+                BottomToolBar(
+                    totalAvailable = viewModel.quotes.size,
+                    currentIndex = viewModel.quotes.indexOf(viewModel.currentQuoteModel),
+                    onShare = { context.startActivity(createShareIntent(formattedQuote)) },
+                    onBack = viewModel::prevQuote,
+                    onForward = viewModel::nextQuote,
+                    themeColor = color,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }
@@ -60,27 +82,17 @@ fun QuotesApp(viewModel: HomeViewModel) {
 @Composable
 fun QuoteCard(
     loadingStatus: QuoteApiStatus,
-    currentQuote: Quote?,
+    currentQuoteModel: QuoteModel?,
     themeColor: Color,
-    totalAvailable: Int,
-    currentIndex: Int,
     activeTags: List<String>,
-    onBackClick: () -> Unit,
-    onForwardClick: () -> Unit,
-    onTagClick: (text: String) -> Unit
+    onTagClick: (text: String) -> Unit,
+    bottomRowContent: @Composable () -> Unit = {}
 ) {
-    val color: Color by animateColorAsState(
-        targetValue = themeColor,
-        animationSpec = tween(
-            durationMillis = 1200,
-            easing = LinearOutSlowInEasing
-        )
-    )
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .fillMaxSize()
-            .background(color = color)
+            .background(color = themeColor)
     ) {
         Box(
             Modifier
@@ -101,13 +113,6 @@ fun QuoteCard(
 
             ) {
                 if (loadingStatus != QuoteApiStatus.LOADING && loadingStatus != QuoteApiStatus.ERROR) {
-                    val context = LocalContext.current
-                    val formattedQuote = stringResource(
-                        R.string.quote,
-                        currentQuote!!.quote,
-                        currentQuote.author,
-                        "#" + currentQuote.tags.replace(", ", " #")
-                    )
                     if (activeTags.isNotEmpty()) {
                         Text(
                             text = activeTags.joinToString(
@@ -119,18 +124,18 @@ fun QuoteCard(
                                 .padding(8.dp)
                                 .align(alignment = Alignment.CenterHorizontally),
                             style = MaterialTheme.typography.h5,
-                            color = color,
+                            color = themeColor,
                             textAlign = TextAlign.Center,
                             maxLines = 2
                         )
                     }
                     QuoteText(
-                        text = currentQuote.quote,
-                        themeColor = color
+                        text = currentQuoteModel!!.quote,
+                        themeColor = themeColor
                     )
                     Text(
-                        text = "- " + currentQuote.author,
-                        color = color,
+                        text = "- " + currentQuoteModel.author,
+                        color = themeColor,
                         modifier = Modifier
                             .align(alignment = Alignment.End)
                             .padding(12.dp),
@@ -140,22 +145,15 @@ fun QuoteCard(
                         )
                     )
                     TagBarRow(
-                        themeColor = color,
-                        tags = getValidTags(currentQuote.tags.split(", "), activeTags),
+                        themeColor = themeColor,
+                        tags = getValidTags(currentQuoteModel.tags.split(", "), activeTags),
                         activeTags = activeTags,
                         onTagClick = onTagClick
                     )
-                    BottomToolBar(
-                        totalAvailable = totalAvailable,
-                        currentIndex = currentIndex,
-                        onShare = { context.startActivity(createShareIntent(formattedQuote)) },
-                        onBack = onBackClick,
-                        onForward = onForwardClick,
-                        themeColor = color,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    bottomRowContent()
+
                 } else {
-                    QuoteText(text = stringResource(R.string.loading_text), themeColor = color)
+                    QuoteText(text = stringResource(R.string.loading_text), themeColor = themeColor)
                     if (loadingStatus == QuoteApiStatus.ERROR) {
                         Text(
                             text = stringResource(R.string.error_text),
@@ -176,28 +174,30 @@ fun QuoteCardPreview() {
     QuotesAppTheme {
         QuoteCard(
             loadingStatus = QuoteApiStatus.DONE,
-            currentQuote = Quote(
+            currentQuoteModel = QuoteModel(
+                quoteId = "",
                 author = "Albert Einstein",
                 quote = "The only reason for time is so that everything doesn't happen at once",
-                "",
-                ""
+                source = "",
+                tags = "live, laugh, love, happy"
             ),
-            Purple200, 5, 1, listOf(), {}, {}, {})
+            Purple200, listOf("happy"), {})
     }
 }
 
 @Preview(showBackground = true, name = "Error", uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-fun QuoteCardPreviewError() {
+fun QuoteCardErrorPreview() {
     QuotesAppTheme {
         QuoteCard(
             loadingStatus = QuoteApiStatus.ERROR,
-            currentQuote = Quote(
+            currentQuoteModel = QuoteModel(
+                quoteId = "",
                 author = "Albert Einstein",
                 quote = "The only reason for time is so that everything doesn't happen at once",
-                "",
-                ""
+                source = "",
+                tags = "live, laugh, love, happy"
             ),
-            Purple200, 5, 1, listOf(), {}, {}, {})
+            Purple200, listOf("happy"), {})
     }
 }
