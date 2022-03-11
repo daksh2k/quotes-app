@@ -9,10 +9,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,16 +28,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.quotesapp.HomeViewModel
-import com.example.quotesapp.QuoteApiStatus
+import com.example.quotesapp.LoadingStatus
 import com.example.quotesapp.R
 import com.example.quotesapp.data.model.Quote
 import com.example.quotesapp.ui.components.BottomToolBar
 import com.example.quotesapp.ui.components.QuoteText
-import com.example.quotesapp.ui.components.TagBarRow
 import com.example.quotesapp.ui.components.createShareIntent
 import com.example.quotesapp.ui.theme.Purple200
 import com.example.quotesapp.ui.theme.QuotesAppTheme
-import com.example.quotesapp.utils.getValidTags
 
 @Composable
 fun QuotesApp(viewModel: HomeViewModel) {
@@ -53,10 +52,11 @@ fun QuotesApp(viewModel: HomeViewModel) {
             )
             QuoteCard(
                 loadingStatus = viewModel.status,
+                forceReload = viewModel::getQuotes,
                 currentQuoteModel = viewModel.currentQuoteModel,
                 themeColor = color,
                 activeTags = viewModel.activeTags,
-                onTagClick = viewModel::getTaggedQuotes
+//                onTagClick = viewModel::getTaggedQuotes
             ) {
                 val context = LocalContext.current
                 val formattedQuote = stringResource(
@@ -65,9 +65,10 @@ fun QuotesApp(viewModel: HomeViewModel) {
                     viewModel.currentQuoteModel!!.author,
                     "#" + viewModel.currentQuoteModel!!.tags.replace(", ", " #")
                 )
+                val currentQuotes by viewModel.quotes.collectAsState()
                 BottomToolBar(
-                    totalAvailable = viewModel.quotes.size,
-                    currentIndex = viewModel.quotes.indexOf(viewModel.currentQuoteModel),
+                    totalAvailable = currentQuotes.size,
+                    currentIndex = currentQuotes.indexOf(viewModel.currentQuoteModel),
                     onShare = { context.startActivity(createShareIntent(formattedQuote)) },
                     onBack = viewModel::prevQuote,
                     onForward = viewModel::nextQuote,
@@ -81,11 +82,12 @@ fun QuotesApp(viewModel: HomeViewModel) {
 
 @Composable
 fun QuoteCard(
-    loadingStatus: QuoteApiStatus,
+    loadingStatus: LoadingStatus,
+    forceReload: () -> Unit,
     currentQuoteModel: Quote?,
     themeColor: Color,
     activeTags: List<String>,
-    onTagClick: (text: String) -> Unit,
+//    onTagClick: (text: String) -> Unit,
     bottomRowContent: @Composable () -> Unit = {}
 ) {
     Box(
@@ -112,7 +114,15 @@ fun QuoteCard(
                     .fillMaxWidth()
 
             ) {
-                if (loadingStatus != QuoteApiStatus.LOADING && loadingStatus != QuoteApiStatus.ERROR) {
+                if (loadingStatus == LoadingStatus.DONE || loadingStatus == LoadingStatus.ERROR) {
+                    IconButton(
+                        onClick = forceReload,
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Reload quotes")
+                    }
+                }
+                if (loadingStatus != LoadingStatus.LOADING && loadingStatus != LoadingStatus.ERROR) {
                     if (activeTags.isNotEmpty()) {
                         Text(
                             text = activeTags.joinToString(
@@ -144,17 +154,17 @@ fun QuoteCard(
                             fontSize = 22.sp
                         )
                     )
-                    TagBarRow(
-                        themeColor = themeColor,
-                        tags = getValidTags(currentQuoteModel.tags.split(", "), activeTags),
-                        activeTags = activeTags,
-                        onTagClick = onTagClick
-                    )
+//                    TagBarRow(
+//                        themeColor = themeColor,
+//                        tags = getValidTags(currentQuoteModel.tags.split(", "), activeTags),
+//                        activeTags = activeTags,
+//                        onTagClick = onTagClick
+//                    )
                     bottomRowContent()
 
                 } else {
                     QuoteText(text = stringResource(R.string.loading_text), themeColor = themeColor)
-                    if (loadingStatus == QuoteApiStatus.ERROR) {
+                    if (loadingStatus == LoadingStatus.ERROR) {
                         Text(
                             text = stringResource(R.string.error_text),
                             color = MaterialTheme.colors.error
@@ -173,7 +183,8 @@ fun QuoteCard(
 fun QuoteCardPreview() {
     QuotesAppTheme {
         QuoteCard(
-            loadingStatus = QuoteApiStatus.DONE,
+            loadingStatus = LoadingStatus.DONE,
+            {},
             currentQuoteModel = Quote(
                 quoteId = "",
                 author = "Albert Einstein",
@@ -190,7 +201,8 @@ fun QuoteCardPreview() {
 fun QuoteCardErrorPreview() {
     QuotesAppTheme {
         QuoteCard(
-            loadingStatus = QuoteApiStatus.ERROR,
+            loadingStatus = LoadingStatus.ERROR,
+            {},
             currentQuoteModel = Quote(
                 quoteId = "",
                 author = "Albert Einstein",

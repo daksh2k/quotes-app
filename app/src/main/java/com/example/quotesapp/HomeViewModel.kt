@@ -7,23 +7,29 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.quotesapp.network.QuoteApi
-import com.example.quotesapp.network.QuoteModel
+import com.example.quotesapp.data.DefaultQuotesRepository
+import com.example.quotesapp.data.model.Quote
 import com.example.quotesapp.ui.theme.pastelColors
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 
-enum class QuoteApiStatus { LOADING, ERROR, DONE, PRELOAD }
+enum class LoadingStatus { LOADING, ERROR, DONE, PRELOAD }
 
-private const val TAG = "LOADING QUOTES"
+private const val TAG = "HOME VIEWMODEL"
 
-class HomeViewModel : ViewModel() {
+class HomeViewModel(
+    private val quotesRepository: DefaultQuotesRepository
+) : ViewModel() {
 
     private var currentQuoteViewIndex by mutableStateOf(-1)
 
-    var status by mutableStateOf(QuoteApiStatus.LOADING)
+    var status by mutableStateOf(LoadingStatus.LOADING)
         private set
+
 
     var themeColor by mutableStateOf(getRandomColor(initial = true))
         private set
@@ -31,11 +37,14 @@ class HomeViewModel : ViewModel() {
     var activeTags = mutableStateListOf<String>()
         private set
 
-    var quotes = mutableStateListOf<QuoteModel>()
-        private set
+//    var quotes = mutableStateListOf<Quote>()
+//        private set
 
-    val currentQuoteModel: QuoteModel?
-        get() = quotes.getOrNull(currentQuoteViewIndex)
+    private val _quotes = MutableStateFlow(mutableListOf<Quote>())
+    val quotes: StateFlow<List<Quote>> = _quotes
+
+    val currentQuoteModel: Quote?
+        get() = _quotes.value.getOrNull(currentQuoteViewIndex)
 
     init {
         getQuotes()
@@ -44,40 +53,40 @@ class HomeViewModel : ViewModel() {
     /**
      * Get the quotes from the Api and set them in the ViewModel
      **/
-    private fun getQuotes() {
+    fun getQuotes() {
         viewModelScope.launch {
-            status = QuoteApiStatus.LOADING
+            status = LoadingStatus.LOADING
             try {
-                val apiResp = QuoteApi.retrofitService.getQuotes()
-                quotes.addAll(apiResp.quotes)
+                val quotesResponse = quotesRepository.getQuotes()
+                _quotes.value.addAll(quotesResponse)
                 currentQuoteViewIndex = 0
-                status = QuoteApiStatus.DONE
+                status = LoadingStatus.DONE
             } catch (e: Exception) {
                 Log.e(TAG, e.stackTraceToString())
-                status = QuoteApiStatus.ERROR
+                status = LoadingStatus.ERROR
             }
         }
     }
 
     fun nextQuote() {
-        if (quotes.size - currentQuoteViewIndex < 10 && status != QuoteApiStatus.PRELOAD) {
+        if (_quotes.value.size - currentQuoteViewIndex < 10 && status != LoadingStatus.PRELOAD) {
             Log.d(TAG, "Preloading next quotes")
             viewModelScope.launch {
-                status = QuoteApiStatus.PRELOAD
+                status = LoadingStatus.PRELOAD
                 try {
-                    val apiResp =
-                        QuoteApi.retrofitService.getQuotes(tag = activeTags.joinToString(separator = " "))
-                    quotes.addAll(apiResp.quotes)
-                    quotes.distinct()
-                    Log.d(TAG, "Preloaded!!!!!" + apiResp.quotesPresent)
-                    status = QuoteApiStatus.DONE
+                    val apiResp = quotesRepository.getQuotes()
+//                        QuoteApi.retrofitService.getQuotes(tag = activeTags.joinToString(separator = " "))
+                    _quotes.value.addAll(apiResp)
+                    _quotes.value.distinct()
+//                    Log.d(TAG, "Preloaded!!!!!" + apiResp.quotesPresent)
+                    status = LoadingStatus.DONE
                 } catch (e: Exception) {
                     Log.e(TAG, e.stackTraceToString())
                 }
             }
         }
         themeColor = getRandomColor()
-        if (currentQuoteViewIndex < quotes.size - 1) {
+        if (currentQuoteViewIndex < _quotes.value.size - 1) {
             currentQuoteViewIndex += 1
         } else {
             currentQuoteViewIndex = 0
@@ -91,33 +100,34 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-    fun getTaggedQuotes(tag: String) {
-        if (activeTags.contains(tag)) {
-            activeTags.remove(tag)
-        } else {
-            if (activeTags.size > 2) {
-                return
-            }
-            activeTags.add(tag)
-        }
-        viewModelScope.launch {
-            status = QuoteApiStatus.LOADING
-            try {
-                val apiResp =
-                    QuoteApi.retrofitService.getQuotes(tag = activeTags.joinToString(separator = " "))
-                if (apiResp.quotesPresent == 0) {
-                    status = QuoteApiStatus.ERROR
-                } else {
-                    quotes.clear()
-                    quotes.addAll(apiResp.quotes)
-                    currentQuoteViewIndex = 0
-                    status = QuoteApiStatus.DONE
-                }
-            } catch (e: Exception) {
-                status = QuoteApiStatus.ERROR
-            }
-        }
-    }
+    // TODO: Update the repository to handle tagged quotes
+//    fun getTaggedQuotes(tag: String) {
+//        if (activeTags.contains(tag)) {
+//            activeTags.remove(tag)
+//        } else {
+//            if (activeTags.size > 2) {
+//                return
+//            }
+//            activeTags.add(tag)
+//        }
+//        viewModelScope.launch {
+//            status = LoadingStatus.LOADING
+//            try {
+//                val apiResp =
+//                    QuoteApi.retrofitService.getQuotes(tag = activeTags.joinToString(separator = " "))
+//                if (apiResp.quotesPresent == 0) {
+//                    status = LoadingStatus.ERROR
+//                } else {
+//                    _quotes.value.clear()
+//                    _quotes.value.addAll(apiResp.quotes)
+//                    currentQuoteViewIndex = 0
+//                    status = LoadingStatus.DONE
+//                }
+//            } catch (e: Exception) {
+//                status = LoadingStatus.ERROR
+//            }
+//        }
+//    }
 
     /**
      * Returns a new color every time.
@@ -129,5 +139,19 @@ class HomeViewModel : ViewModel() {
             return if (randomColor == themeColor) getRandomColor() else randomColor
         }
         return randomColor
+    }
+}
+
+/**
+ * Factory for creating a [HomeViewModel] with a constructor that takes a
+ * [DefaultQuotesRepository].
+ */
+class HomeViewModelFactory(
+    private val repository: DefaultQuotesRepository
+) : ViewModelProvider.Factory {
+
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        return HomeViewModel(repository) as T
     }
 }
