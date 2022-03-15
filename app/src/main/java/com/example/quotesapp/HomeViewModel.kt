@@ -58,6 +58,7 @@ class HomeViewModel(
             status = LoadingStatus.LOADING
             try {
                 val quotesResponse = quotesRepository.getQuotes()
+                _quotes.value.clear()
                 _quotes.value.addAll(quotesResponse)
                 currentQuoteViewIndex = 0
                 status = LoadingStatus.DONE
