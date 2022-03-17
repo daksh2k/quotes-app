@@ -56,7 +56,7 @@ fun QuotesApp(viewModel: HomeViewModel) {
                 currentQuoteModel = viewModel.currentQuoteModel,
                 themeColor = color,
                 activeTags = viewModel.activeTags,
-//                onTagClick = viewModel::getTaggedQuotes
+                onTagClick = viewModel::getTaggedQuotes
             ) {
                 val context = LocalContext.current
                 val formattedQuote = stringResource(
@@ -87,7 +87,7 @@ fun QuoteCard(
     currentQuoteModel: Quote?,
     themeColor: Color,
     activeTags: List<String>,
-//    onTagClick: (text: String) -> Unit,
+    onTagClick: (text: String) -> Unit,
     bottomRowContent: @Composable () -> Unit = {}
 ) {
     Box(
@@ -154,12 +154,12 @@ fun QuoteCard(
                             fontSize = 22.sp
                         )
                     )
-//                    TagBarRow(
-//                        themeColor = themeColor,
-//                        tags = getValidTags(currentQuoteModel.tags.split(", "), activeTags),
-//                        activeTags = activeTags,
-//                        onTagClick = onTagClick
-//                    )
+                    TagBarRow(
+                        themeColor = themeColor,
+                        tags = getValidTags(currentQuoteModel.tags.split(", "), activeTags),
+                        activeTags = activeTags,
+                        onTagClick = onTagClick
+                    )
                     bottomRowContent()
 
                 } else {

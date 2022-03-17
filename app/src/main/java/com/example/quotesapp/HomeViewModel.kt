@@ -102,33 +102,41 @@ class HomeViewModel(
     }
 
     // TODO: Update the repository to handle tagged quotes
-//    fun getTaggedQuotes(tag: String) {
-//        if (activeTags.contains(tag)) {
-//            activeTags.remove(tag)
-//        } else {
-//            if (activeTags.size > 2) {
-//                return
-//            }
-//            activeTags.add(tag)
-//        }
-//        viewModelScope.launch {
-//            status = LoadingStatus.LOADING
-//            try {
-//                val apiResp =
-//                    QuoteApi.retrofitService.getQuotes(tag = activeTags.joinToString(separator = " "))
-//                if (apiResp.quotesPresent == 0) {
-//                    status = LoadingStatus.ERROR
-//                } else {
-//                    _quotes.value.clear()
-//                    _quotes.value.addAll(apiResp.quotes)
-//                    currentQuoteViewIndex = 0
-//                    status = LoadingStatus.DONE
-//                }
-//            } catch (e: Exception) {
+    fun getTaggedQuotes(tag: String) {
+        var tagRemoved = false
+        if (activeTags.contains(tag)) {
+            activeTags.remove(tag)
+            tagRemoved = true
+        } else {
+            if (activeTags.size > 2) {
+                _statusMessage.value = Event("Cannot select more than 3 tags.")
+                return
+            }
+            activeTags.add(tag)
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            status = LoadingStatus.LOADING
+            try {
+                val apiResp =
+                    quotesRepository.getTaggedQuotes(tag = activeTags.joinToString(separator = " "))
+//                val apiResp = QuoteApi.retrofitService.getQuotes(tag = activeTags.joinToString(separator = " "))
+                if (apiResp.quotesPresent == 0) {
+                    status = LoadingStatus.ERROR
+                    _statusMessage.value = Event("No quotes present for selected tags.")
+                } else {
+                    _quotes.value.clear()
+                    _quotes.value.addAll(apiResp.quotes)
+                    currentQuoteViewIndex = 0
+                }
+            } catch (e: Exception) {
+                if (tagRemoved) activeTags.add(tag) else activeTags.remove(tag)
+                _statusMessage.value =
+                    Event("You need an active internet connection for getting tagged quotes.")
 //                status = LoadingStatus.ERROR
-//            }
-//        }
-//    }
+            }
+            status = LoadingStatus.DONE
+        }
+    }
 
     /**
      * Returns a new color every time.
@@ -140,6 +148,10 @@ class HomeViewModel(
             return if (randomColor == themeColor) getRandomColor() else randomColor
         }
         return randomColor
+    }
+
+    companion object {
+        private var allQuotesFetched = false
     }
 }
 

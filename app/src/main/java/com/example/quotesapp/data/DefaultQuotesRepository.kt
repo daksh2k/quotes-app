@@ -38,20 +38,10 @@ class DefaultQuotesRepository(
         }
     }
 
-    //    private suspend fun getQuotesFromRemoteDataSource(tags: String = ""){
-//        withContext(ioDispatcher) {
-//            coroutineScope {
-//                launch {
-//                    try {
-//                        val remoteQuotes = quotesRemoteDataSource.getQuotes(tag = tags)
-//                        re
-//                    } catch (ex: Exception) {
-//                        Log.e(TAG, "Error fetching quotes from remote.", ex)
-//                    }
-//                }
-//            }
-//        }
-//    }
+    override suspend fun getTaggedQuotes(tag: String): QuoteApiModel {
+        return quotesRemoteDataSource.getQuotes(tag = tag)
+    }
+
     private suspend fun updateQuotesFromRemoteDataSource() {
         withContext(ioDispatcher) {
             coroutineScope {
