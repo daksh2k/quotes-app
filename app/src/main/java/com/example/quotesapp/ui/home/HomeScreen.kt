@@ -10,8 +10,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -32,10 +30,7 @@ import com.example.quotesapp.HomeViewModel
 import com.example.quotesapp.LoadingStatus
 import com.example.quotesapp.R
 import com.example.quotesapp.data.model.Quote
-import com.example.quotesapp.ui.components.BottomToolBar
-import com.example.quotesapp.ui.components.QuoteText
-import com.example.quotesapp.ui.components.TagBarRow
-import com.example.quotesapp.ui.components.createShareIntent
+import com.example.quotesapp.ui.components.*
 import com.example.quotesapp.ui.theme.Purple200
 import com.example.quotesapp.ui.theme.QuotesAppTheme
 import com.example.quotesapp.utils.getValidTags
@@ -60,6 +55,12 @@ fun QuotesApp(viewModel: HomeViewModel) {
         }
         Scaffold(
             scaffoldState = scaffoldState,
+            topBar = {
+                QuotesTopAppBar(
+                    forceReload = viewModel::getQuotes,
+                    loadingStatus = viewModel.status
+                )
+            },
             modifier = Modifier
         ) {
             val color: Color by animateColorAsState(
@@ -71,7 +72,6 @@ fun QuotesApp(viewModel: HomeViewModel) {
             )
             QuoteCard(
                 loadingStatus = viewModel.status,
-                forceReload = viewModel::getQuotes,
                 currentQuoteModel = viewModel.currentQuoteModel,
                 themeColor = color,
                 activeTags = viewModel.activeTags,
@@ -102,7 +102,6 @@ fun QuotesApp(viewModel: HomeViewModel) {
 @Composable
 fun QuoteCard(
     loadingStatus: LoadingStatus,
-    forceReload: () -> Unit,
     currentQuoteModel: Quote?,
     themeColor: Color,
     activeTags: List<String>,
@@ -133,14 +132,14 @@ fun QuoteCard(
                     .fillMaxWidth()
 
             ) {
-                if (loadingStatus == LoadingStatus.DONE || loadingStatus == LoadingStatus.ERROR) {
-                    IconButton(
-                        onClick = forceReload,
-                        modifier = Modifier.align(Alignment.End)
-                    ) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Reload quotes")
-                    }
-                }
+//                if (loadingStatus == LoadingStatus.DONE || loadingStatus == LoadingStatus.ERROR) {
+//                    IconButton(
+//                        onClick = forceReload,
+//                        modifier = Modifier.align(Alignment.End)
+//                    ) {
+//                        Icon(Icons.Default.Refresh, contentDescription = "Reload quotes")
+//                    }
+//                }
                 if (loadingStatus != LoadingStatus.LOADING && loadingStatus != LoadingStatus.ERROR) {
                     if (activeTags.isNotEmpty()) {
                         Text(
@@ -203,7 +202,6 @@ fun QuoteCardPreview() {
     QuotesAppTheme {
         QuoteCard(
             loadingStatus = LoadingStatus.DONE,
-            {},
             currentQuoteModel = Quote(
                 quoteId = "",
                 author = "Albert Einstein",
@@ -221,7 +219,6 @@ fun QuoteCardErrorPreview() {
     QuotesAppTheme {
         QuoteCard(
             loadingStatus = LoadingStatus.ERROR,
-            {},
             currentQuoteModel = Quote(
                 quoteId = "",
                 author = "Albert Einstein",
