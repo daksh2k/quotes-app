@@ -1,8 +1,10 @@
 package com.example.quotesapp.data
 
 import android.util.Log
+import androidx.lifecycle.LiveData
 import com.example.quotesapp.data.local.QuoteDao
 import com.example.quotesapp.data.model.Quote
+import com.example.quotesapp.data.model.QuoteApiModel
 import com.example.quotesapp.data.remote.QuoteApiService
 import kotlinx.coroutines.*
 
@@ -16,6 +18,9 @@ class DefaultQuotesRepository(
     private val quotesLocalDataSource: QuoteDao,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : QuotesRepository {
+    override fun observeQuotes(): LiveData<List<Quote>> {
+        return quotesLocalDataSource.observeQuotes()
+    }
 
     override suspend fun getQuotes(): List<Quote> {
         try {
@@ -43,19 +48,19 @@ class DefaultQuotesRepository(
     }
 
     private suspend fun updateQuotesFromRemoteDataSource() {
-        withContext(ioDispatcher) {
-            coroutineScope {
-                launch {
-                    try {
-                        val remoteQuotes = quotesRemoteDataSource.getQuotes()
-                        quotesLocalDataSource.deleteAll()
-                        quotesLocalDataSource.insertAll(remoteQuotes.quotes)
-                    } catch (ex: Exception) {
-                        Log.e(TAG, "Error fetching quotes from remote.", ex)
-                    }
-                }
-            }
-        }
+//        withContext(ioDispatcher) {
+//            coroutineScope {
+//                launch {
+//                    try {
+        val remoteQuotes = quotesRemoteDataSource.getQuotes()
+        deleteAllQuotes()
+        quotesLocalDataSource.insertAll(remoteQuotes.quotes)
+//                    } catch (ex: Exception) {
+//                        Log.e(TAG, "Error fetching quotes from remote.", ex)
+//                    }
+//                }
+//            }
+//        }
     }
 
     companion object {

@@ -13,6 +13,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -33,14 +34,32 @@ import com.example.quotesapp.R
 import com.example.quotesapp.data.model.Quote
 import com.example.quotesapp.ui.components.BottomToolBar
 import com.example.quotesapp.ui.components.QuoteText
+import com.example.quotesapp.ui.components.TagBarRow
 import com.example.quotesapp.ui.components.createShareIntent
 import com.example.quotesapp.ui.theme.Purple200
 import com.example.quotesapp.ui.theme.QuotesAppTheme
+import com.example.quotesapp.utils.getValidTags
 
 @Composable
 fun QuotesApp(viewModel: HomeViewModel) {
+    val scaffoldState: ScaffoldState = rememberScaffoldState()
+
     QuotesAppTheme {
+
+//        val scope = rememberCoroutineScope()
+
+//        val abcc = LocalContext.current
+
+        val statusMessage by viewModel.statusMessage.collectAsState()
+
+        if (!statusMessage.hasBeenHandled && statusMessage.peekContent().isNotEmpty()) {
+//            Toast.makeText(abcc,statusMessage.peekContent(),Toast.LENGTH_SHORT)
+            LaunchedEffect(key1 = statusMessage) {
+                scaffoldState.snackbarHostState.showSnackbar(statusMessage.getContentIfNotHandled()!!)
+            }
+        }
         Scaffold(
+            scaffoldState = scaffoldState,
             modifier = Modifier
         ) {
             val color: Color by animateColorAsState(

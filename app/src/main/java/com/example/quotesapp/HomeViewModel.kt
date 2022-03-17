@@ -12,8 +12,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.quotesapp.data.DefaultQuotesRepository
 import com.example.quotesapp.data.model.Quote
 import com.example.quotesapp.ui.theme.pastelColors
+import com.example.quotesapp.utils.Event
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 
@@ -29,6 +32,12 @@ class HomeViewModel(
 
     var status by mutableStateOf(LoadingStatus.LOADING)
         private set
+
+    private val _statusMessage = MutableStateFlow(Event(""))
+    val statusMessage = _statusMessage.asStateFlow()
+
+//    val message: LiveData<Event<String>>
+//        get() = _statusMessage
 
 
     var themeColor by mutableStateOf(getRandomColor(initial = true))
@@ -54,7 +63,7 @@ class HomeViewModel(
      * Get the quotes from the Api and set them in the ViewModel
      **/
     fun getQuotes() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Main) {
             status = LoadingStatus.LOADING
             try {
                 val quotesResponse = quotesRepository.getQuotes()
@@ -62,23 +71,36 @@ class HomeViewModel(
                 _quotes.value.addAll(quotesResponse)
                 currentQuoteViewIndex = 0
                 status = LoadingStatus.DONE
+                _statusMessage.value = Event("Fetched quotes")
             } catch (e: Exception) {
                 Log.e(TAG, e.stackTraceToString())
+//                statusMessage.value = Event("Error getting quotes.")
                 status = LoadingStatus.ERROR
             }
         }
     }
 
     fun nextQuote() {
-        if (_quotes.value.size - currentQuoteViewIndex < 10 && status != LoadingStatus.PRELOAD) {
+        if (_quotes.value.size - currentQuoteViewIndex < 10
+            && status != LoadingStatus.PRELOAD
+            && !allQuotesFetched
+        ) {
             Log.d(TAG, "Preloading next quotes")
-            viewModelScope.launch {
+            viewModelScope.launch(Dispatchers.IO) {
                 status = LoadingStatus.PRELOAD
                 try {
-                    val apiResp = quotesRepository.getQuotes()
-//                        QuoteApi.retrofitService.getQuotes(tag = activeTags.joinToString(separator = " "))
-                    _quotes.value.addAll(apiResp)
-                    _quotes.value.distinct()
+                    val newQuotes = if (activeTags.isNotEmpty()) {
+                        quotesRepository.getTaggedQuotes(tag = activeTags.joinToString(separator = " ")).quotes
+                    } else {
+                        quotesRepository.getQuotes()
+                    }
+                    newQuotes.filter { it.quoteId !in _quotes.value.map { it1 -> it1.quoteId } }
+                    if (newQuotes.isEmpty()) {
+                        allQuotesFetched = true
+                    }
+                    _quotes.value.addAll(newQuotes)
+//                  QuoteApi.retrofitService.getQuotes(tag = activeTags.joinToString(separator = " "))
+//                    _quotes.value.distinct()
 //                    Log.d(TAG, "Preloaded!!!!!" + apiResp.quotesPresent)
                     status = LoadingStatus.DONE
                 } catch (e: Exception) {
