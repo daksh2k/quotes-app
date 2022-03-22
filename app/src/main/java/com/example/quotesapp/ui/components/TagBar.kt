@@ -15,6 +15,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.quotesapp.ui.theme.Purple200
 
+/**
+ * A simple Lazy row which shows tags.
+ * Uses [TagButton] to show active and inactive tags.
+ * @param tags Inactive tags
+ * @param activeTags Active tags
+ * @param onTagClick What should happen on tag click.
+ */
 @Composable
 fun TagBarRow(
     modifier: Modifier = Modifier,

@@ -1,26 +1,26 @@
 package com.example.quotesapp.data
 
 import android.util.Log
-import androidx.lifecycle.LiveData
 import com.example.quotesapp.data.local.QuoteDao
 import com.example.quotesapp.data.model.Quote
 import com.example.quotesapp.data.model.QuoteApiModel
 import com.example.quotesapp.data.remote.QuoteApiService
 import kotlinx.coroutines.*
 
-private const val TAG = "REPOSITARY"
+private const val TAG = "REPOSITORY"
 
 /**
- * Default implementation of [QuotesRepository]. Single entry point for managing tasks' data.
+ * Default implementation of [QuotesRepository]. Single entry point for managing quotes' data.
  */
 class DefaultQuotesRepository(
     private val quotesRemoteDataSource: QuoteApiService,
     private val quotesLocalDataSource: QuoteDao,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : QuotesRepository {
-    override fun observeQuotes(): LiveData<List<Quote>> {
-        return quotesLocalDataSource.observeQuotes()
-    }
+
+//    override fun observeQuotes(): LiveData<List<Quote>> {
+//        return quotesLocalDataSource.observeQuotes()
+//    }
 
     override suspend fun getQuotes(): List<Quote> {
         try {
@@ -43,24 +43,14 @@ class DefaultQuotesRepository(
         }
     }
 
-    override suspend fun getTaggedQuotes(tag: String): QuoteApiModel {
-        return quotesRemoteDataSource.getQuotes(tag = tag)
+    override suspend fun getTaggedQuotes(tags: List<String>): QuoteApiModel {
+        return quotesRemoteDataSource.getQuotes(tag = tags.joinToString(separator = " "))
     }
 
     private suspend fun updateQuotesFromRemoteDataSource() {
-//        withContext(ioDispatcher) {
-//            coroutineScope {
-//                launch {
-//                    try {
         val remoteQuotes = quotesRemoteDataSource.getQuotes()
         deleteAllQuotes()
         quotesLocalDataSource.insertAll(remoteQuotes.quotes)
-//                    } catch (ex: Exception) {
-//                        Log.e(TAG, "Error fetching quotes from remote.", ex)
-//                    }
-//                }
-//            }
-//        }
     }
 
     companion object {

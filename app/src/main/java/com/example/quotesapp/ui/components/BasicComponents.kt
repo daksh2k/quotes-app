@@ -20,6 +20,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+/**
+ * Main Quote text along with a Quote Icon.
+ */
 @Composable
 fun QuoteText(
     text: String,
@@ -40,7 +43,7 @@ fun QuoteText(
         Text(
             text = text,
             modifier = Modifier
-                .padding(4.dp)
+                .padding(2.dp)
                 .verticalScroll(scroll),
             color = themeColor,
             style = MaterialTheme.typography.h5.copy(fontWeight = FontWeight.W400)

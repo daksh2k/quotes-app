@@ -14,11 +14,6 @@ class UpdateDatabaseWorker(
     override suspend fun doWork(): Result = coroutineScope {
         try {
             getQuotesRepository(context = applicationContext).refreshQuotes()
-
-//            val apiResp = QuoteApi.retrofitService.getQuotes()
-//            val database = AppDatabase.getInstance(applicationContext)
-//            database.quoteDao().deleteAll()
-//            database.quoteDao().insertAll(apiResp.quotes)
             Result.success()
         } catch (ex: Exception) {
             Log.e(TAG, "Error updating database", ex)

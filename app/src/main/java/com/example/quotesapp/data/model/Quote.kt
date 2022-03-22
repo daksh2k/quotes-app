@@ -12,3 +12,5 @@ data class Quote(
     val source: String,
     val tags: String,
 )
+
+fun Quote.getTagsList(): List<String> = tags.split(", ")
