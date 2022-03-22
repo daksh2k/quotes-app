@@ -30,6 +30,7 @@ import com.example.quotesapp.HomeViewModel
 import com.example.quotesapp.LoadingStatus
 import com.example.quotesapp.R
 import com.example.quotesapp.data.model.Quote
+import com.example.quotesapp.data.model.getTagsList
 import com.example.quotesapp.ui.components.*
 import com.example.quotesapp.ui.theme.Purple200
 import com.example.quotesapp.ui.theme.QuotesAppTheme
@@ -37,44 +38,41 @@ import com.example.quotesapp.utils.getValidTags
 
 @Composable
 fun QuotesApp(viewModel: HomeViewModel) {
-    val scaffoldState: ScaffoldState = rememberScaffoldState()
-
     QuotesAppTheme {
-
-//        val scope = rememberCoroutineScope()
-
-//        val abcc = LocalContext.current
-
+        val scaffoldState: ScaffoldState = rememberScaffoldState()
         val statusMessage by viewModel.statusMessage.collectAsState()
 
         if (!statusMessage.hasBeenHandled && statusMessage.peekContent().isNotEmpty()) {
-//            Toast.makeText(abcc,statusMessage.peekContent(),Toast.LENGTH_SHORT)
             LaunchedEffect(key1 = statusMessage) {
                 scaffoldState.snackbarHostState.showSnackbar(statusMessage.getContentIfNotHandled()!!)
             }
         }
+        val loadingStatus by viewModel.status.collectAsState()
+        val themeColor by viewModel.themeColor.collectAsState()
+        val activeTags by viewModel.activeTags.collectAsState()
+        val color: Color by animateColorAsState(
+            targetValue = themeColor,
+            animationSpec = tween(
+                durationMillis = 1200,
+                easing = LinearOutSlowInEasing
+            )
+        )
         Scaffold(
             scaffoldState = scaffoldState,
             topBar = {
                 QuotesTopAppBar(
                     forceReload = viewModel::getQuotes,
-                    loadingStatus = viewModel.status
+                    loadingStatus = loadingStatus,
+                    themeColor = color
                 )
             },
             modifier = Modifier
         ) {
-            val color: Color by animateColorAsState(
-                targetValue = viewModel.themeColor,
-                animationSpec = tween(
-                    durationMillis = 1200,
-                    easing = LinearOutSlowInEasing
-                )
-            )
             QuoteCard(
-                loadingStatus = viewModel.status,
+                loadingStatus = loadingStatus,
                 currentQuoteModel = viewModel.currentQuoteModel,
                 themeColor = color,
-                activeTags = viewModel.activeTags,
+                activeTags = activeTags,
                 onTagClick = viewModel::getTaggedQuotes
             ) {
                 val context = LocalContext.current
@@ -132,14 +130,6 @@ fun QuoteCard(
                     .fillMaxWidth()
 
             ) {
-//                if (loadingStatus == LoadingStatus.DONE || loadingStatus == LoadingStatus.ERROR) {
-//                    IconButton(
-//                        onClick = forceReload,
-//                        modifier = Modifier.align(Alignment.End)
-//                    ) {
-//                        Icon(Icons.Default.Refresh, contentDescription = "Reload quotes")
-//                    }
-//                }
                 if (loadingStatus != LoadingStatus.LOADING && loadingStatus != LoadingStatus.ERROR) {
                     if (activeTags.isNotEmpty()) {
                         Text(
@@ -149,7 +139,7 @@ fun QuoteCard(
                                 separator = ", #"
                             ),
                             modifier = Modifier
-                                .padding(8.dp)
+                                .padding(6.dp)
                                 .align(alignment = Alignment.CenterHorizontally),
                             style = MaterialTheme.typography.h5,
                             color = themeColor,
@@ -174,7 +164,7 @@ fun QuoteCard(
                     )
                     TagBarRow(
                         themeColor = themeColor,
-                        tags = getValidTags(currentQuoteModel.tags.split(", "), activeTags),
+                        tags = getValidTags(currentQuoteModel.getTagsList(), activeTags),
                         activeTags = activeTags,
                         onTagClick = onTagClick
                     )
