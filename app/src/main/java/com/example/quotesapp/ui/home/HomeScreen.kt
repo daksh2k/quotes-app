@@ -1,7 +1,8 @@
 package com.example.quotesapp.ui.home
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -80,16 +81,16 @@ fun QuotesApp(viewModel: HomeViewModel) {
             topBar = {
                 AnimatedVisibility(
                     visible = !layoutState.value || lazyListState.isScrollingUp(),
-                    enter = slideInVertically(
-                        // Enters by sliding in from offset -fullHeight to 0.
-                        initialOffsetY = { fullHeight -> -fullHeight / 4 },
-                        animationSpec = tween(durationMillis = 200, easing = LinearEasing)
-                    ),
-                    exit = slideOutVertically(
-                        // Exits by sliding out from offset 0 to -fullHeight.
-                        targetOffsetY = { fullHeight -> -fullHeight / 4 },
-                        animationSpec = tween(durationMillis = 200, easing = LinearEasing)
-                    )
+//                    enter = slideInVertically(
+//                        // Enters by sliding in from offset -fullHeight to 0.
+//                        initialOffsetY = { fullHeight -> -fullHeight / 4 },
+//                        animationSpec = tween(durationMillis = 200, easing = LinearEasing)
+//                    ),
+//                    exit = slideOutVertically(
+//                        // Exits by sliding out from offset 0 to -fullHeight.
+//                        targetOffsetY = { fullHeight -> -fullHeight / 4 },
+//                        animationSpec = tween(durationMillis = 200, easing = LinearEasing)
+//                    )
                 ) {
 //                if(!layoutState.value || lazyListState.isScrollingUp()){
                     QuotesTopAppBar(

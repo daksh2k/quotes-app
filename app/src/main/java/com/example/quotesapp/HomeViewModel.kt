@@ -56,6 +56,7 @@ class HomeViewModel(
             try {
                 val quotesResponse = quotesRepository.getQuotes()
                 _quotes.value.clear()
+                _activeTags.value.clear()
                 _quotes.value.addAll(quotesResponse)
                 _currentQuoteViewIndex.value = 0
                 _status.value = LoadingStatus.DONE
@@ -70,7 +71,7 @@ class HomeViewModel(
 
     /**
      * Navigate to the next quote.
-     * Also checks in if there is need for prefetching.
+     * Also checks if there is need for prefetching.
      */
     fun nextQuote() {
         if (_quotes.value.size - _currentQuoteViewIndex.value < 10
@@ -139,6 +140,19 @@ class HomeViewModel(
     }
 
     /**
+     * Check the lazy list and decide if there is need for prefetching quotes.
+     * @param itemInViewIndex index of first visible item
+     */
+    fun checkScroll(itemInViewIndex: Int) {
+        if (_quotes.value.size - itemInViewIndex < 15
+            && _status.value != LoadingStatus.PRELOAD
+            && !allQuotesFetched
+        ) {
+            prefetchQuotes()
+        }
+    }
+
+    /**
      * Loads the next random quotes before reaching the end.
      * So he user can always navigate to next.
      */
@@ -159,6 +173,7 @@ class HomeViewModel(
                 _quotes.value.addAll(newQuotes)
                 _status.value = LoadingStatus.DONE
             } catch (e: Exception) {
+                _status.value = LoadingStatus.DONE
                 Log.e(TAG, e.stackTraceToString())
             }
         }
