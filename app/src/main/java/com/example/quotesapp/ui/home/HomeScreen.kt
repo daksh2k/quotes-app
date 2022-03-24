@@ -1,46 +1,53 @@
 package com.example.quotesapp.ui.home
 
-import android.content.res.Configuration
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.*
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Scaffold
+import androidx.compose.material.ScaffoldState
+import androidx.compose.material.rememberScaffoldState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.quotesapp.HomeViewModel
 import com.example.quotesapp.LoadingStatus
 import com.example.quotesapp.R
+import com.example.quotesapp.data.SettingsDataStore
+import com.example.quotesapp.data.dataStore
 import com.example.quotesapp.data.model.Quote
-import com.example.quotesapp.data.model.getTagsList
 import com.example.quotesapp.ui.components.*
 import com.example.quotesapp.ui.theme.Purple200
 import com.example.quotesapp.ui.theme.QuotesAppTheme
-import com.example.quotesapp.utils.getValidTags
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun QuotesApp(viewModel: HomeViewModel) {
     QuotesAppTheme {
         val scaffoldState: ScaffoldState = rememberScaffoldState()
         val statusMessage by viewModel.statusMessage.collectAsState()
+        val appContext = LocalContext.current
+        val scope = rememberCoroutineScope()
+        val dataStore = SettingsDataStore(appContext.dataStore)
+        val layoutState = dataStore.preferenceFlow.collectAsState(false)
+
 
         if (!statusMessage.hasBeenHandled && statusMessage.peekContent().isNotEmpty()) {
             LaunchedEffect(key1 = statusMessage) {
@@ -50,6 +57,11 @@ fun QuotesApp(viewModel: HomeViewModel) {
         val loadingStatus by viewModel.status.collectAsState()
         val themeColor by viewModel.themeColor.collectAsState()
         val activeTags by viewModel.activeTags.collectAsState()
+        val allQuotes by viewModel.quotes.collectAsState()
+
+        // Remember a SystemUiController
+        val systemUiController = rememberSystemUiController()
+
         val color: Color by animateColorAsState(
             targetValue = themeColor,
             animationSpec = tween(
@@ -57,54 +69,87 @@ fun QuotesApp(viewModel: HomeViewModel) {
                 easing = LinearOutSlowInEasing
             )
         )
+        SideEffect {
+            systemUiController.setStatusBarColor(
+                color = color
+            )
+        }
+        val lazyListState = rememberLazyListState()
         Scaffold(
             scaffoldState = scaffoldState,
             topBar = {
-                QuotesTopAppBar(
-                    forceReload = viewModel::getQuotes,
-                    loadingStatus = loadingStatus,
-                    themeColor = color
-                )
+                AnimatedVisibility(
+                    visible = !layoutState.value || lazyListState.isScrollingUp(),
+                    enter = slideInVertically(
+                        // Enters by sliding in from offset -fullHeight to 0.
+                        initialOffsetY = { fullHeight -> -fullHeight / 4 },
+                        animationSpec = tween(durationMillis = 200, easing = LinearEasing)
+                    ),
+                    exit = slideOutVertically(
+                        // Exits by sliding out from offset 0 to -fullHeight.
+                        targetOffsetY = { fullHeight -> -fullHeight / 4 },
+                        animationSpec = tween(durationMillis = 200, easing = LinearEasing)
+                    )
+                ) {
+//                if(!layoutState.value || lazyListState.isScrollingUp()){
+                    QuotesTopAppBar(
+                        forceReload = viewModel::getQuotes,
+                        loadingStatus = loadingStatus,
+                        themeColor = color,
+                        listLayout = layoutState.value,
+                        onListClick = {
+                            scope.launch {
+                                dataStore.saveLayoutToPreferencesStore(
+                                    !layoutState.value,
+                                    appContext
+                                )
+//                            Toast.makeText(appContext,"Switched layout: "+layoutState.value.toString(),Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    )
+                }
             },
             modifier = Modifier
         ) {
-            QuoteCard(
-                loadingStatus = loadingStatus,
-                currentQuoteModel = viewModel.currentQuoteModel,
-                themeColor = color,
-                activeTags = activeTags,
-                onTagClick = viewModel::getTaggedQuotes
-            ) {
-                val context = LocalContext.current
-                val formattedQuote = stringResource(
-                    R.string.quote,
-                    viewModel.currentQuoteModel!!.quote,
-                    viewModel.currentQuoteModel!!.author,
-                    "#" + viewModel.currentQuoteModel!!.tags.replace(", ", " #")
-                )
-                val currentQuotes by viewModel.quotes.collectAsState()
-                BottomToolBar(
-                    totalAvailable = currentQuotes.size,
-                    currentIndex = currentQuotes.indexOf(viewModel.currentQuoteModel),
-                    onShare = { context.startActivity(createShareIntent(formattedQuote)) },
-                    onBack = viewModel::prevQuote,
-                    onForward = viewModel::nextQuote,
+            if (layoutState.value) {
+                QuotesListViewLayout(
+                    loadingStatus = loadingStatus,
+                    listState = lazyListState,
+                    allQuotes = allQuotes,
                     themeColor = color,
-                    modifier = Modifier.fillMaxWidth()
+                    activeTags = activeTags,
+                    onTagClick = viewModel::getTaggedQuotes,
+                    onScrollListener = viewModel::checkScroll
+                )
+            } else {
+                QuotesSingleViewLayout(
+                    loadingStatus = loadingStatus,
+                    allQuotes = allQuotes,
+                    currentQuote = viewModel.currentQuoteModel,
+                    themeColor = color,
+                    activeTags = activeTags,
+                    onTagClick = viewModel::getTaggedQuotes,
+                    onBack = viewModel::prevQuote,
+                    onForward = viewModel::nextQuote
                 )
             }
         }
     }
 }
 
+/**
+ * Default single view layout with navigation buttons and Tag Bar.
+ */
 @Composable
-fun QuoteCard(
+fun QuotesSingleViewLayout(
     loadingStatus: LoadingStatus,
-    currentQuoteModel: Quote?,
+    allQuotes: List<Quote>,
+    currentQuote: Quote?,
     themeColor: Color,
     activeTags: List<String>,
     onTagClick: (text: String) -> Unit,
-    bottomRowContent: @Composable () -> Unit = {}
+    onBack: () -> Unit,
+    onForward: () -> Unit
 ) {
     Box(
         contentAlignment = Alignment.Center,
@@ -112,110 +157,156 @@ fun QuoteCard(
             .fillMaxSize()
             .background(color = themeColor)
     ) {
-        Box(
-            Modifier
-                .clip(shape = RoundedCornerShape(15.dp))
-                .border(
-                    width = 5.dp,
-                    color = MaterialTheme.colors.onPrimary,
-                    shape = RoundedCornerShape(15.dp)
-                )
-                .requiredWidthIn(max = LocalConfiguration.current.screenWidthDp.dp.minus(20.dp))
-                .animateContentSize()
+        QuoteCard(
+            loadingStatus = loadingStatus,
+            currentQuoteModel = currentQuote,
+            themeColor = themeColor,
+            activeTags = activeTags,
+            onTagClick = onTagClick
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(3.dp)
-                    .background(color = MaterialTheme.colors.onPrimary)
-                    .fillMaxWidth()
+            val context = LocalContext.current
+            val formattedQuote = stringResource(
+                R.string.quote,
+                currentQuote!!.quote,
+                currentQuote.author,
+                "#" + currentQuote.tags.replace(", ", " #")
+            )
+            BottomToolBar(
+                totalAvailable = allQuotes.size,
+                currentIndex = allQuotes.indexOf(currentQuote),
+                onShare = { context.startActivity(createShareIntent(formattedQuote)) },
+                onBack = onBack,
+                onForward = onForward,
+                themeColor = themeColor,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
 
+}
+
+/**
+ * Default List View Layout to show multiple quotes together.
+ */
+@Composable
+fun QuotesListViewLayout(
+    loadingStatus: LoadingStatus,
+    allQuotes: List<Quote>,
+    listState: LazyListState,
+//    currentQuote: Quote?,
+    themeColor: Color,
+    activeTags: List<String>,
+    onTagClick: (text: String) -> Unit,
+    onScrollListener: (itemIndex: Int) -> Unit
+) {
+    if (listState.isScrollInProgress) {
+        onScrollListener(listState.firstVisibleItemIndex)
+    }
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .fillMaxSize()
+            .background(color = themeColor)
+    ) {
+        Column {
+//            if(activeTags.isNotEmpty() && listState.isScrollingUp()){
+            AnimatedVisibility(activeTags.isNotEmpty()) {
+                TagBarRow(
+                    modifier = Modifier
+                        .padding(5.dp)
+                        .fillMaxWidth()
+                        .clip(shape = RoundedCornerShape(15.dp))
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colors.onPrimary,
+                            shape = RoundedCornerShape(15.dp)
+                        )
+                        .background(MaterialTheme.colors.onPrimary),
+                    themeColor = themeColor,
+                    tags = listOf(),
+                    activeTags = activeTags,
+                    onTagClick = onTagClick
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
+            LazyColumn(
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                state = listState,
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.padding(8.dp)
             ) {
-                if (loadingStatus != LoadingStatus.LOADING && loadingStatus != LoadingStatus.ERROR) {
-                    if (activeTags.isNotEmpty()) {
-                        Text(
-                            text = activeTags.joinToString(
-                                prefix = "#",
-                                postfix = " quotes",
-                                separator = ", #"
-                            ),
-                            modifier = Modifier
-                                .padding(6.dp)
-                                .align(alignment = Alignment.CenterHorizontally),
-                            style = MaterialTheme.typography.h5,
-                            color = themeColor,
-                            textAlign = TextAlign.Center,
-                            maxLines = 2
-                        )
+                if (loadingStatus == LoadingStatus.LOADING) {
+                    items(List(20) { "$it" }) {
+                        LoadingCard()
                     }
-                    QuoteText(
-                        text = currentQuoteModel!!.quote,
-                        themeColor = themeColor
-                    )
-                    Text(
-                        text = "- " + currentQuoteModel.author,
-                        color = themeColor,
-                        modifier = Modifier
-                            .align(alignment = Alignment.End)
-                            .padding(12.dp),
-                        style = MaterialTheme.typography.body1.copy(
-                            fontWeight = FontWeight.W300,
-                            fontSize = 22.sp
-                        )
-                    )
-                    TagBarRow(
-                        themeColor = themeColor,
-                        tags = getValidTags(currentQuoteModel.getTagsList(), activeTags),
-                        activeTags = activeTags,
-                        onTagClick = onTagClick
-                    )
-                    bottomRowContent()
 
                 } else {
-                    QuoteText(text = stringResource(R.string.loading_text), themeColor = themeColor)
-                    if (loadingStatus == LoadingStatus.ERROR) {
-                        Text(
-                            text = stringResource(R.string.error_text),
-                            color = MaterialTheme.colors.error
+                    items(allQuotes) { quote ->
+                        QuoteCard(
+                            loadingStatus = LoadingStatus.DONE,
+                            showActiveTagsHeading = false,
+                            currentQuoteModel = quote,
+                            themeColor = themeColor,
+                            activeTags = activeTags,
+                            onTagClick = onTagClick
                         )
                     }
                 }
+                if (loadingStatus == LoadingStatus.PRELOAD) {
+                    item {
+                        LoadingProgressIndicator()
+                    }
+                }
+
             }
         }
     }
 }
 
-
-@Preview(showBackground = true, name = "Dark Mode", uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Preview(showBackground = true, name = "Light Mode")
 @Composable
-fun QuoteCardPreview() {
+@Preview
+fun QuotesSingleViewLayoutPreview() {
     QuotesAppTheme {
-        QuoteCard(
+        QuotesSingleViewLayout(
             loadingStatus = LoadingStatus.DONE,
-            currentQuoteModel = Quote(
+            allQuotes = listOf(),
+            currentQuote = Quote(
                 quoteId = "",
                 author = "Albert Einstein",
                 quote = "The only reason for time is so that everything doesn't happen at once",
                 source = "",
                 tags = "live, laugh, love, happy"
             ),
-            Purple200, listOf("happy"), {})
+            themeColor = Purple200,
+            activeTags = listOf("life"),
+            onTagClick = {},
+            onBack = {},
+            onForward = { }
+        )
     }
 }
 
-@Preview(showBackground = true, name = "Error", uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-fun QuoteCardErrorPreview() {
+@Preview
+fun QuotesListViewLayoutPreview() {
     QuotesAppTheme {
-        QuoteCard(
-            loadingStatus = LoadingStatus.ERROR,
-            currentQuoteModel = Quote(
-                quoteId = "",
-                author = "Albert Einstein",
-                quote = "The only reason for time is so that everything doesn't happen at once",
-                source = "",
-                tags = "live, laugh, love, happy"
-            ),
-            Purple200, listOf("happy"), {})
+        QuotesListViewLayout(
+            loadingStatus = LoadingStatus.PRELOAD,
+            listState = rememberLazyListState(),
+            allQuotes = List(30) {
+                Quote(
+                    quoteId = "",
+                    author = "Albert Einstein",
+                    quote = "The only reason for time is so that everything doesn't happen at once",
+                    source = "",
+                    tags = "live, laugh, love, happy"
+                )
+            },
+            themeColor = Purple200,
+            activeTags = listOf("some"),
+            onTagClick = {},
+            onScrollListener = {}
+        )
     }
 }

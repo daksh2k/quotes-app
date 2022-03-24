@@ -3,7 +3,9 @@ package com.example.quotesapp.ui.components
 
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.OpenWith
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -23,20 +25,20 @@ import com.example.quotesapp.ui.theme.QuotesAppTheme
 fun QuotesTopAppBar(
     forceReload: () -> Unit,
     loadingStatus: LoadingStatus,
-    themeColor: Color
+    themeColor: Color,
+    listLayout: Boolean,
+    onListClick: () -> Unit
 ) {
     TopAppBar(
         title = { Text(text = stringResource(id = R.string.app_name)) },
         modifier = Modifier.alpha(1f),
         actions = {
-            if (loadingStatus == LoadingStatus.DONE || loadingStatus == LoadingStatus.ERROR) {
-                IconButton(
-                    onClick = forceReload,
-                    modifier = Modifier
-                ) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Reload quotes")
-                }
-            }
+            TopActions(
+                loadingStatus = loadingStatus,
+                forceReload = forceReload,
+                listLayout = listLayout,
+                onListClick = onListClick
+            )
         },
         backgroundColor = themeColor,
         contentColor = MaterialTheme.colors.onPrimary,
@@ -44,6 +46,35 @@ fun QuotesTopAppBar(
     )
 
 }
+
+@Composable
+fun TopActions(
+    loadingStatus: LoadingStatus,
+    forceReload: () -> Unit,
+    listLayout: Boolean,
+    onListClick: () -> Unit
+) {
+    if (loadingStatus == LoadingStatus.DONE || loadingStatus == LoadingStatus.ERROR) {
+        IconButton(
+            onClick = forceReload,
+            modifier = Modifier
+        ) {
+            Icon(Icons.Default.Refresh, contentDescription = "Reload quotes")
+        }
+    }
+    IconButton(
+        onClick = onListClick,
+        modifier = Modifier
+    ) {
+        if (listLayout) {
+            Icon(Icons.Default.OpenWith, contentDescription = "Switch to Single View")
+        } else {
+            Icon(Icons.Default.ViewList, contentDescription = "Switch to List Layout")
+        }
+    }
+
+}
+
 @Composable
 @Preview(showBackground = true)
 fun PreviewTopBar() {
@@ -51,7 +82,9 @@ fun PreviewTopBar() {
         QuotesTopAppBar(
             forceReload = {},
             loadingStatus = LoadingStatus.DONE,
-            themeColor = Purple200
+            themeColor = Purple200,
+            listLayout = false,
+            {}
         )
     }
 }
