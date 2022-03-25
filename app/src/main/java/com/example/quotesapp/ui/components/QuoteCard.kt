@@ -31,16 +31,18 @@ import com.example.quotesapp.ui.theme.Purple200
 import com.example.quotesapp.ui.theme.QuotesAppTheme
 import com.example.quotesapp.utils.getValidTags
 
-
+/**
+ * Main quote card composable with slots for changing content in the bottom bar.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun QuoteCard(
-    loadingStatus: LoadingStatus,
+    loadingStatus: LoadingStatus = LoadingStatus.DONE,
     showActiveTagsHeading: Boolean = true,
-    currentQuoteModel: Quote?,
-    themeColor: Color,
-    activeTags: List<String>,
-    onTagClick: (text: String) -> Unit,
+    currentQuoteModel: Quote? = null,
+    themeColor: Color = Purple200,
+    activeTags: List<String> = listOf(),
+    onTagClick: (text: String) -> Unit = {},
     bottomRowContent: @Composable () -> Unit = {}
 ) {
     Box(
@@ -56,10 +58,10 @@ fun QuoteCard(
     ) {
         var formattedQuote = ""
         val context = LocalContext.current
-        if (loadingStatus == LoadingStatus.DONE) {
+        if (loadingStatus == LoadingStatus.DONE && currentQuoteModel != null) {
             formattedQuote = stringResource(
                 R.string.quote,
-                currentQuoteModel!!.quote,
+                currentQuoteModel.quote,
                 currentQuoteModel.author,
                 "#" + currentQuoteModel.tags.replace(", ", " #")
             )
@@ -76,53 +78,54 @@ fun QuoteCard(
                 )
 
         ) {
-            if (loadingStatus != LoadingStatus.LOADING && loadingStatus != LoadingStatus.ERROR) {
-                if (activeTags.isNotEmpty() && showActiveTagsHeading) {
-                    Text(
-                        text = activeTags.joinToString(
-                            prefix = "#",
-                            postfix = " quotes",
-                            separator = ", #"
-                        ),
-                        modifier = Modifier
-                            .padding(6.dp)
-                            .align(alignment = Alignment.CenterHorizontally),
-                        style = MaterialTheme.typography.h5,
-                        color = themeColor,
-                        textAlign = TextAlign.Center,
-                        maxLines = 2
-                    )
-                }
-                QuoteText(
-                    text = currentQuoteModel!!.quote,
+            when (loadingStatus) {
+                LoadingStatus.ERROR -> QuoteText(
+                    text = stringResource(R.string.error_text),
+                    themeColor = MaterialTheme.colors.error
+                )
+                LoadingStatus.LOADING -> QuoteText(
+                    text = stringResource(R.string.loading_text),
                     themeColor = themeColor
                 )
-                Text(
-                    text = "- " + currentQuoteModel.author,
-                    color = themeColor,
-                    modifier = Modifier
-                        .align(alignment = Alignment.End)
-                        .padding(12.dp),
-                    style = MaterialTheme.typography.body1.copy(
-                        fontWeight = FontWeight.W300,
-                        fontSize = 22.sp
+                else -> {
+                    if (activeTags.isNotEmpty() && showActiveTagsHeading) {
+                        Text(
+                            text = activeTags.joinToString(
+                                prefix = "#",
+                                postfix = " quotes",
+                                separator = ", #"
+                            ),
+                            modifier = Modifier
+                                .padding(6.dp)
+                                .align(alignment = Alignment.CenterHorizontally),
+                            style = MaterialTheme.typography.h5,
+                            color = themeColor,
+                            textAlign = TextAlign.Center,
+                            maxLines = 2
+                        )
+                    }
+                    QuoteText(
+                        text = currentQuoteModel!!.quote,
+                        themeColor = themeColor
                     )
-                )
-                TagBarRow(
-                    themeColor = themeColor,
-                    tags = getValidTags(currentQuoteModel.getTagsList(), activeTags),
-                    activeTags = activeTags,
-                    onTagClick = onTagClick
-                )
-                bottomRowContent()
-
-            } else {
-                QuoteText(text = stringResource(R.string.loading_text), themeColor = themeColor)
-                if (loadingStatus == LoadingStatus.ERROR) {
                     Text(
-                        text = stringResource(R.string.error_text),
-                        color = MaterialTheme.colors.error
+                        text = "- " + currentQuoteModel.author,
+                        color = themeColor,
+                        modifier = Modifier
+                            .align(alignment = Alignment.End)
+                            .padding(12.dp),
+                        style = MaterialTheme.typography.body1.copy(
+                            fontWeight = FontWeight.W300,
+                            fontSize = 22.sp
+                        )
                     )
+                    TagBarRow(
+                        themeColor = themeColor,
+                        tags = getValidTags(currentQuoteModel.getTagsList(), activeTags),
+                        activeTags = activeTags,
+                        onTagClick = onTagClick
+                    )
+                    bottomRowContent()
                 }
             }
         }
@@ -136,7 +139,6 @@ fun QuoteCard(
 fun QuoteCardPreview() {
     QuotesAppTheme {
         QuoteCard(
-            loadingStatus = LoadingStatus.DONE,
             currentQuoteModel = Quote(
                 quoteId = "",
                 author = "Albert Einstein",
@@ -144,7 +146,8 @@ fun QuoteCardPreview() {
                 source = "",
                 tags = "live, laugh, love, happy"
             ),
-            themeColor = Purple200, activeTags = listOf("happy"), onTagClick = {})
+            activeTags = listOf("happy")
+        )
     }
 }
 
@@ -161,6 +164,7 @@ fun QuoteCardErrorPreview() {
                 source = "",
                 tags = "live, laugh, love, happy"
             ),
-            themeColor = Purple200, activeTags = listOf("happy"), onTagClick = {})
+            activeTags = listOf("happy")
+        )
     }
 }

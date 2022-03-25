@@ -41,7 +41,7 @@ class SettingsDataStore(preference_datastore: DataStore<Preferences>) {
             preferences[IS_LIST_LAYOUT] ?: false
         }
 
-    suspend fun saveLayoutToPreferencesStore(isListLayout: Boolean, context: Context) {
+    suspend fun saveLayoutPref(isListLayout: Boolean, context: Context) {
         context.dataStore.edit { preferences ->
             preferences[IS_LIST_LAYOUT] = isListLayout
         }

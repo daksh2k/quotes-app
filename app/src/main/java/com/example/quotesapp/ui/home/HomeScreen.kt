@@ -38,30 +38,41 @@ import com.example.quotesapp.ui.theme.QuotesAppTheme
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import kotlinx.coroutines.launch
 
+
+/**
+ * Main entry point for app.
+ * Manages the top bar and both single and list view layouts.
+ * @param viewModel The main viewModel which contains all the implementations and data.
+ */
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun QuotesApp(viewModel: HomeViewModel) {
     QuotesAppTheme {
+
+        // Remember scaffold state to show snackbar on status change
         val scaffoldState: ScaffoldState = rememberScaffoldState()
         val statusMessage by viewModel.statusMessage.collectAsState()
-        val appContext = LocalContext.current
-        val scope = rememberCoroutineScope()
-        val dataStore = SettingsDataStore(appContext.dataStore)
-        val layoutState = dataStore.preferenceFlow.collectAsState(false)
 
-
+        // Show snackbar when there is a change in message and message is not empty.
         if (!statusMessage.hasBeenHandled && statusMessage.peekContent().isNotEmpty()) {
             LaunchedEffect(key1 = statusMessage) {
                 scaffoldState.snackbarHostState.showSnackbar(statusMessage.getContentIfNotHandled()!!)
             }
         }
+
+        val appContext = LocalContext.current
+        val scope = rememberCoroutineScope()
+
+        //Get the preferences data store instance which stores the layout preference
+        val dataStore = SettingsDataStore(appContext.dataStore)
+        val layoutState = dataStore.preferenceFlow.collectAsState(false)
+
+        // Get the relevant variables from viewmodel
         val loadingStatus by viewModel.status.collectAsState()
         val themeColor by viewModel.themeColor.collectAsState()
         val activeTags by viewModel.activeTags.collectAsState()
         val allQuotes by viewModel.quotes.collectAsState()
 
-        // Remember a SystemUiController
-        val systemUiController = rememberSystemUiController()
 
         val color: Color by animateColorAsState(
             targetValue = themeColor,
@@ -70,17 +81,21 @@ fun QuotesApp(viewModel: HomeViewModel) {
                 easing = LinearOutSlowInEasing
             )
         )
-        SideEffect {
-            systemUiController.setStatusBarColor(
-                color = color
-            )
-        }
+
+        // Remember a SystemUiController to match status bar with theme color
+        val systemUiController = rememberSystemUiController()
+        systemUiController.setStatusBarColor(
+            color = color
+        )
+
+        // Remember a lazy list state to respond to events on scroll
         val lazyListState = rememberLazyListState()
+
         Scaffold(
             scaffoldState = scaffoldState,
             topBar = {
                 AnimatedVisibility(
-                    visible = !layoutState.value || lazyListState.isScrollingUp(),
+                    visible = !layoutState.value || (lazyListState.firstVisibleItemIndex == 0 || lazyListState.isScrollingUp()),
 //                    enter = slideInVertically(
 //                        // Enters by sliding in from offset -fullHeight to 0.
 //                        initialOffsetY = { fullHeight -> -fullHeight / 4 },
@@ -100,11 +115,10 @@ fun QuotesApp(viewModel: HomeViewModel) {
                         listLayout = layoutState.value,
                         onListClick = {
                             scope.launch {
-                                dataStore.saveLayoutToPreferencesStore(
+                                dataStore.saveLayoutPref(
                                     !layoutState.value,
                                     appContext
                                 )
-//                            Toast.makeText(appContext,"Switched layout: "+layoutState.value.toString(),Toast.LENGTH_SHORT).show()
                             }
                         }
                     )
@@ -194,7 +208,6 @@ fun QuotesListViewLayout(
     loadingStatus: LoadingStatus,
     allQuotes: List<Quote>,
     listState: LazyListState,
-//    currentQuote: Quote?,
     themeColor: Color,
     activeTags: List<String>,
     onTagClick: (text: String) -> Unit,
@@ -237,21 +250,19 @@ fun QuotesListViewLayout(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.padding(8.dp)
             ) {
-                if (loadingStatus == LoadingStatus.LOADING) {
-                    items(List(20) { "$it" }) {
-                        LoadingCard()
-                    }
-
-                } else {
-                    items(allQuotes) { quote ->
-                        QuoteCard(
-                            loadingStatus = LoadingStatus.DONE,
-                            showActiveTagsHeading = false,
-                            currentQuoteModel = quote,
-                            themeColor = themeColor,
-                            activeTags = activeTags,
-                            onTagClick = onTagClick
-                        )
+                when (loadingStatus) {
+                    LoadingStatus.LOADING -> items(List(20) { "$it" }) { LoadingCard() }
+                    LoadingStatus.ERROR -> item { QuoteCard(loadingStatus) }
+                    else -> {
+                        items(allQuotes) { quote ->
+                            QuoteCard(
+                                showActiveTagsHeading = false,
+                                currentQuoteModel = quote,
+                                themeColor = themeColor,
+                                activeTags = activeTags,
+                                onTagClick = onTagClick
+                            )
+                        }
                     }
                 }
                 if (loadingStatus == LoadingStatus.PRELOAD) {
@@ -293,7 +304,7 @@ fun QuotesSingleViewLayoutPreview() {
 fun QuotesListViewLayoutPreview() {
     QuotesAppTheme {
         QuotesListViewLayout(
-            loadingStatus = LoadingStatus.PRELOAD,
+            loadingStatus = LoadingStatus.DONE,
             listState = rememberLazyListState(),
             allQuotes = List(30) {
                 Quote(
