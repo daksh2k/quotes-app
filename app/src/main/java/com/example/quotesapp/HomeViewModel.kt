@@ -55,6 +55,9 @@ class HomeViewModel(
             _status.value = LoadingStatus.LOADING
             try {
                 val quotesResponse = quotesRepository.getQuotes()
+                if (quotesResponse.isEmpty()) {
+                    throw Exception("No quotes returned!")
+                }
                 _quotes.value.clear()
                 _activeTags.value.clear()
                 _quotes.value.addAll(quotesResponse)
@@ -98,7 +101,6 @@ class HomeViewModel(
         }
     }
 
-    // Done: TODO: Update the repository to handle tagged quotes
     /**
      * Get quotes according to the selected tags.
      * Disallows selecting more than 3 tags.
@@ -126,6 +128,9 @@ class HomeViewModel(
                     _status.value = LoadingStatus.ERROR
                     _statusMessage.value = Event("No quotes present for selected tags.")
                 } else {
+                    if (apiResp.quotesReturned == apiResp.quotesPresent) {
+                        allQuotesFetched = true
+                    }
                     _quotes.value.clear()
                     _quotes.value.addAll(apiResp.quotes)
                     _currentQuoteViewIndex.value = 0
@@ -161,12 +166,13 @@ class HomeViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             _status.value = LoadingStatus.PRELOAD
             try {
-                val newQuotes = if (_activeTags.value.isNotEmpty()) {
+                var newQuotes = if (_activeTags.value.isNotEmpty()) {
                     quotesRepository.getTaggedQuotes(_activeTags.value).quotes
                 } else {
                     quotesRepository.getQuotes()
                 }
-                newQuotes.filter { it.quoteId !in _quotes.value.map { it1 -> it1.quoteId } }
+                newQuotes =
+                    newQuotes.filter { it.quoteId !in _quotes.value.map { it1 -> it1.quoteId } }
                 if (newQuotes.isEmpty()) {
                     allQuotesFetched = true
                 }

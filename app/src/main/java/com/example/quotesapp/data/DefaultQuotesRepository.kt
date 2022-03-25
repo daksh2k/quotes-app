@@ -43,10 +43,17 @@ class DefaultQuotesRepository(
         }
     }
 
+    /**
+     * Get tagged quotes. Only supported via network request.
+     * @param tags List of tags
+     */
     override suspend fun getTaggedQuotes(tags: List<String>): QuoteApiModel {
         return quotesRemoteDataSource.getQuotes(tag = tags.joinToString(separator = " "))
     }
 
+    /**
+     * Update quotes from network in local database.
+     */
     private suspend fun updateQuotesFromRemoteDataSource() {
         val remoteQuotes = quotesRemoteDataSource.getQuotes()
         deleteAllQuotes()
