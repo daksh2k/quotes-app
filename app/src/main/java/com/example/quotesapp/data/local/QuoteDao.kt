@@ -1,6 +1,5 @@
 package com.example.quotesapp.data.local
 
-import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -22,8 +21,8 @@ interface QuoteDao {
      *
      * @return all quotes.
      */
-    @Query("SELECT * FROM quotes")
-    fun observeQuotes(): LiveData<List<Quote>>
+//    @Query("SELECT * FROM quotes")
+//    fun observeQuotes(): LiveData<List<Quote>>
 
     /**
      * Delete all quotes.

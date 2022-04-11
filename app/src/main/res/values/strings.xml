@@ -2,6 +2,6 @@
     <string name="app_name">Quotes</string>
     <string name="quote">%1$s\n-%2$s\n%3$s</string>
     <string name="loading_text">Fetching Quotes!</string>
-    <string name="error_text">Error in fetching\nCheck your network connection!</string>
+    <string name="error_text">Error in fetching!\n\nCheck your network connection!</string>
     <string name="tag_fetch_fail">You need an active internet connection for getting tagged quotes.</string>
 </resources>

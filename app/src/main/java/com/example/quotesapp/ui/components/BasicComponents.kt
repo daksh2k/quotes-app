@@ -175,7 +175,7 @@ fun NavigateQuoteButtonRow(
         ) {
             Icon(
                 imageVector = Icons.Default.ChevronRight,
-                contentDescription = "Go Back",
+                contentDescription = "Go Forward",
                 modifier = iconMods
             )
         }

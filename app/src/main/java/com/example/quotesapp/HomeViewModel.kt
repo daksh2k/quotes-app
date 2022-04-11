@@ -6,9 +6,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.quotesapp.data.DefaultQuotesRepository
+import com.example.quotesapp.data.QuotesRepository
 import com.example.quotesapp.data.model.Quote
 import com.example.quotesapp.ui.theme.pastelColors
 import com.example.quotesapp.utils.Event
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,7 +20,8 @@ import kotlinx.coroutines.launch
 enum class LoadingStatus { LOADING, ERROR, DONE, PRELOAD }
 
 class HomeViewModel(
-    private val quotesRepository: DefaultQuotesRepository
+    private val quotesRepository: QuotesRepository,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
 
     private val _currentQuoteViewIndex = MutableStateFlow(-1)
@@ -42,16 +45,15 @@ class HomeViewModel(
         get() = _quotes.value.getOrNull(_currentQuoteViewIndex.value)
 
     init {
-        getQuotes(initial = true)
+        getQuotes()
     }
 
     /**
-     * @param initial Whether quotes are fetched from init.
      * Get the quotes from the data repository and set them in the ViewModel
      **/
-    fun getQuotes(initial: Boolean = false) {
+    fun getQuotes() {
         allQuotesFetched = false
-        viewModelScope.launch(if (initial) Dispatchers.Main else Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.IO) {
             _status.value = LoadingStatus.LOADING
             try {
                 val quotesResponse = quotesRepository.getQuotes()
@@ -119,7 +121,7 @@ class HomeViewModel(
             }
             _activeTags.value.add(tag)
         }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(dispatcher) {
             _status.value = LoadingStatus.LOADING
             try {
                 val apiResp =
@@ -162,7 +164,7 @@ class HomeViewModel(
      * So he user can always navigate to next.
      */
     private fun prefetchQuotes() {
-        Log.d(TAG, "Prefetching next quotes")
+//        Log.d(TAG, "Prefetching next quotes")
         viewModelScope.launch(Dispatchers.IO) {
             _status.value = LoadingStatus.PRELOAD
             try {
@@ -208,7 +210,7 @@ class HomeViewModel(
  * [DefaultQuotesRepository].
  */
 class HomeViewModelFactory(
-    private val repository: DefaultQuotesRepository
+    private val repository: QuotesRepository
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")

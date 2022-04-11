@@ -5,7 +5,8 @@ import com.example.quotesapp.data.local.QuoteDao
 import com.example.quotesapp.data.model.Quote
 import com.example.quotesapp.data.model.QuoteApiModel
 import com.example.quotesapp.data.remote.QuoteApiService
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 
 private const val TAG = "REPOSITORY"
 
@@ -36,11 +37,7 @@ class DefaultQuotesRepository(
     }
 
     override suspend fun deleteAllQuotes() {
-        withContext(ioDispatcher) {
-            coroutineScope {
-                launch { quotesLocalDataSource.deleteAll() }
-            }
-        }
+        quotesLocalDataSource.deleteAll()
     }
 
     /**
