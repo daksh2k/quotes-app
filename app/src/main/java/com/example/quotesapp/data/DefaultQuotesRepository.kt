@@ -19,10 +19,6 @@ class DefaultQuotesRepository(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : QuotesRepository {
 
-//    override fun observeQuotes(): LiveData<List<Quote>> {
-//        return quotesLocalDataSource.observeQuotes()
-//    }
-
     override suspend fun getQuotes(): List<Quote> {
         try {
             updateQuotesFromRemoteDataSource()

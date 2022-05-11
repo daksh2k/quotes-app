@@ -1,7 +1,6 @@
 package com.example.quotesapp.ui.home
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -44,7 +43,6 @@ import kotlinx.coroutines.launch
  * Manages the top bar and both single and list view layouts.
  * @param viewModel The main viewModel which contains all the implementations and data.
  */
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun QuotesApp(viewModel: HomeViewModel) {
     QuotesAppTheme {
